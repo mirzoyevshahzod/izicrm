@@ -43,6 +43,21 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        'hr_db' => [
+            'driver' => 'mysql',
+            'host' => '192.168.10.1',
+            'port' => '3306',
+            'database' => 'hikcentral_db',
+            'username' => 'HR',
+            'password' => 'P@ssw0rd@321',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),

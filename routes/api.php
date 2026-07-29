@@ -14,6 +14,9 @@ use App\Http\Controllers\TelegramDavomatController;
 use App\Http\Controllers\TelegramEmployeeContoller;
 use App\Http\Controllers\MaterialRequestController;
 use App\Http\Controllers\RequestBotContoller;
+use App\Http\Controllers\TariffTelegramController;
+use App\Http\Controllers\TestController;
+use App\Http\Controllers\ContactAsBotController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -28,6 +31,8 @@ Route::post('/telegram/incotruck-request-webhook', [RequestBotContoller::class, 
 Route::post('/telegram/material-request-webhook', [MaterialRequestController::class, 'webhook']);
 Route::post('/incotruck-request-send', [RequestBotContoller::class, 'send']);
 Route::post('/kgs-request-send', [RequestBotContoller::class, 'KGSsend']);
+Route::post('/tariff-webhook', [TariffTelegramController::class, 'webhook']);
+Route::post('/contact-as-webhook', [ContactAsBotController::class, 'webhook']);
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -53,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-Route::get('/test', [AuthController::class, 'test']);
+Route::get('/test', [TestController::class, 'index']);
 
 ////
 Route::get('/queries', [QueryController::class, 'index']);

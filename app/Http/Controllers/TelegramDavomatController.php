@@ -35,8 +35,8 @@ class TelegramDavomatController extends Controller
      */
     public function webhook(Request $request)
     {
-        Log::info('Telegram webhook HIT', $request->all());
-
+        $start = microtime(true);
+        Log::info('Webhook start');
         $update = $request->all();
 
         if (isset($update['message'])) {
@@ -48,6 +48,11 @@ class TelegramDavomatController extends Controller
             $this->handleCallback($update['callback_query']);
             return;
         }
+
+        Log::info('Webhook end', [
+            'time' => microtime(true) - $start
+        ]);
+
 
         return response()->json(['ok' => true]);
     }

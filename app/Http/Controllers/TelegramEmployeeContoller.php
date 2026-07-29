@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use App\Models\SearchHistory;
 use App\Models\Employee;
 
@@ -16,11 +15,12 @@ class TelegramEmployeeContoller extends Controller
     protected string $apiUrl;
 
     private array $hrIds = [
-        // 997696865,
+        997696865,
         // 6337758881
         7510409703,
         6757738816,
-        887162370
+        887162370,
+        7652330111
     ];
 
     public function __construct()
@@ -48,6 +48,20 @@ class TelegramEmployeeContoller extends Controller
     {
         $chatId = $message['chat']['id'];
         $text = $message['text'] ?? null;
+
+
+          if ($text == '/refresh') {
+
+            $this->clearHrCache($chatId);
+
+            $this->sendMessage(
+                $chatId,
+                "✅ Bot holati yangilandi.\nEndi qaytadan foydalanishingiz mumkin."
+            );
+
+            return;
+        }
+
 
         if (isset($message['contact'])) {
 
@@ -82,11 +96,15 @@ class TelegramEmployeeContoller extends Controller
             'phone_number' => $phone
         ]);
 
-        $this->sendMessage($chatId,
-            "✅ Siz muvaffaqiyatli ro'yxatdan o'tdingiz\n\n".
-            "👤 {$employee->full_name}\n\n".
-            "🔎 Qaysi xodimni qidiryapsiz?"
-        );
+        Http::post($this->apiUrl.'sendMessage', [
+            'chat_id' => $chatId,
+            'text' => "✅ Siz muvaffaqiyatli ro'yxatdan o'tdingiz\n\n".
+                    "👤 {$employee->full_name}\n\n".
+                    "🔎 Qaysi xodimni qidiryapsiz?",
+            'reply_markup' => json_encode([
+                'remove_keyboard' => true,
+            ]),
+        ]);
 
         return;
     }
@@ -101,6 +119,11 @@ class TelegramEmployeeContoller extends Controller
         }
 
         $step = cache()->get("step_$chatId");
+
+        if(in_array($chatId, $this->hrIds) && $step){
+            $this->handleHrStep($chatId, $text, $step);
+            return;
+        }
 
         if ($text == '/start') {
 
@@ -199,43 +222,57 @@ class TelegramEmployeeContoller extends Controller
              return;
         }
 
+      
+
         
 
         // ▶️ HR: Employees list + search
-        if ($text == '/employees') {
+      if ($text == '/employees') {
 
-            if (!in_array($chatId, $this->hrIds)) {
-                $this->sendMessage($chatId, "⛔️ Ushbu buyruq faqat HR uchun.");
-                return;
-            }
-
-            $employees = \DB::table('employees')
-                ->orderBy('full_name')
-                ->get();
-
-            if ($employees->isEmpty()) {
-                $this->sendMessage($chatId, "❌ Hech qanday xodim topilmadi.");
-                return;
-            }
-
-            $chunks = $employees->chunk(40); // har xabarda 40 ta
-
-            foreach ($chunks as $chunk) {
-
-                $message = "👥 Xodimlar ro‘yxati:\n\n";
-
-                foreach ($chunk as $index => $employee) {
-
-                    $phone = $employee->work_phone ?? $employee->personal_phone;
-
-                    $message .= "- {$employee->full_name} (📞 {$phone})\n";
-                }
-
-                $this->sendMessage($chatId, $message);
-            }
-
+        if (!in_array($chatId, $this->hrIds)) {
+            $this->sendMessage($chatId, "⛔️ Ushbu buyruq faqat HR uchun.");
             return;
         }
+
+        Http::post($this->apiUrl.'sendMessage', [
+            'chat_id' => $chatId,
+            'text' => "👨‍💼 Hodimlar boshqaruvi",
+            'reply_markup' => [
+                'inline_keyboard' => [
+                    [
+                        [
+                            'text' => '➕ Hodim qo\'shish',
+                            'callback_data' => 'employee_add'
+                        ]
+                    ],
+                    [
+                        [
+                            'text' => '✏️ Hodimni tahrirlash',
+                            'callback_data' => 'employee_edit'
+                        ]
+                    ],
+                    [
+                        [
+                            'text' => '🗑 Hodimni o\'chirish',
+                            'callback_data' => 'employee_delete'
+                        ]
+                    ],
+                    [
+                        [
+                            'text' => '📋 Hodimlar ro\'yxati',
+                            'callback_data' => 'employee_list'
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
+        return;
+    }
+
+
+
+        
 
         if ($user && $text && $text[0] !== '/') {
 
@@ -298,28 +335,180 @@ class TelegramEmployeeContoller extends Controller
         $chatId = $callback['message']['chat']['id'];
         $messageId = $callback['message']['message_id'];
         $contactId = $callback['data'];
+        $data = $callback['data'];
 
-        $contact = Employee::find($contactId);
+        $hrActions = [
+            'employee_add',
+            'employee_edit',
+            'employee_delete',
+            'employee_list'
+        ];
 
-        if (!$contact) return;
+        if (
+            (in_array($data, $hrActions)
+            || str_starts_with($data, 'edit_')
+            || str_starts_with($data, 'delete_'))
+            && !in_array($chatId, $this->hrIds)
+        ) {
+            return;
+        }
 
-        Log::info($callback['message']);
+        if ($data == 'employee_delete') {
 
-        $phone = $contact->personal_phone;
-        $text = "👤 {$contact->full_name}\n📞 {$phone}";
+            cache()->put("step_$chatId", 'employee_delete_search');
 
-        // history yozish
-        SearchHistory::create([
-            'searcher_chat_id' => $chatId,
-            'target_contact_id' => $contact->id,
-            'query' => $contact->full_name
-        ]);
+            $this->sendMessage(
+                $chatId,
+                "📱 O'chiriladigan hodimning ish telefonini kiriting:"
+            );
 
-        Http::post($this->apiUrl.'editMessageText', [
-            'chat_id' => $chatId,
-            'message_id' => $messageId,
-            'text' => $text
-        ]);
+            return;
+        }
+
+        if (str_starts_with($data, 'delete_')) {
+            $this->clearHrCache($chatId);
+            $employeeId = str_replace('delete_', '', $data);
+
+            $employee = Employee::find($employeeId);
+
+            if (!$employee) {
+                return;
+            }
+
+            $name = $employee->full_name;
+
+            $employee->delete();
+
+            $this->sendMessage(
+                $chatId,
+                "✅ {$name} o'chirildi"
+            );
+
+            return;
+        }
+
+
+        if ($data == 'employee_edit') {
+
+            cache()->put("step_$chatId", 'employee_edit_search');
+
+            $this->sendMessage(
+                $chatId,
+                "📱 Tahrirlanadigan hodimning ish telefonini kiriting:"
+            );
+
+            return;
+        }
+
+        if (str_starts_with($data, 'edit_')) {
+            $this->clearHrCache($chatId);
+            $employeeId = str_replace('edit_', '', $data);
+
+            cache()->put("editing_employee_$chatId", $employeeId);
+            cache()->put("step_$chatId", 'edit_employee_name');
+
+            $this->sendMessage(
+                $chatId,
+                "👤 Yangi F.I.O kiriting:"
+            );
+
+            return;
+        }
+
+       if ($data == 'employee_add') {
+
+            Http::post($this->apiUrl.'editMessageText', [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+                'text' => '🏢 Kompaniyani tanlang:',
+                'reply_markup' => [
+                    'inline_keyboard' => [
+                        [[
+                            'text' => 'EGS',
+                            'callback_data' => 'company_EGS'
+                        ]],
+                        [[
+                            'text' => 'IZISOL',
+                            'callback_data' => 'company_IZISOL'
+                        ]],
+                        [[
+                            'text' => 'ESTLINE EXPRES',
+                            'callback_data' => 'company_ESTLINE_EXPRES'
+                        ]],
+                        [[
+                            'text' => 'TRANSEKA',
+                            'callback_data' => 'company_TRANSEKA'
+                        ]],
+                        [[
+                            'text' => 'INCUTRUCK',
+                            'callback_data' => 'company_INCUTRUCK'
+                        ]]
+                    ]
+                ]
+            ]);
+
+            return;
+        }
+
+        if (str_starts_with($data, 'company_')) {
+
+            $company = str_replace('company_', '', $data);
+
+            cache()->put("employee_company_$chatId", $company);
+            cache()->put("step_$chatId", 'employee_name');
+
+            $this->editMessageText(
+                $chatId,
+                $messageId,
+                "👤 Yangi hodim F.I.O sini kiriting:"
+            );
+
+            return;
+        }
+
+        if ($data == 'employee_list') {
+
+            $employees = Employee::orderBy('full_name')->get();
+
+            foreach ($employees->chunk(40) as $chunk) {
+
+                $message = "📋 Hodimlar ro'yxati\n\n";
+
+                foreach ($chunk as $employee) {
+                    $message .= "👤 {$employee->full_name}\n";
+                    $message .= "📞 {$employee->work_phone}\n\n";
+                }
+
+                $this->sendMessage($chatId, $message);
+            }
+
+            return;
+        }
+
+        if (is_numeric($data)) {
+
+            $contact = Employee::find($data);
+
+            if (!$contact) {
+                return;
+            }
+
+            SearchHistory::create([
+                'searcher_chat_id' => $chatId,
+                'target_contact_id' => $contact->id,
+                'query' => $contact->full_name
+            ]);
+
+            Http::post($this->apiUrl.'editMessageText', [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+                'text' => "👤 {$contact->full_name}\n📞 {$contact->personal_phone}"
+            ]);
+
+            return;
+        }
+
+        
     }
     private function toLatin($text)
     {
@@ -373,11 +562,191 @@ class TelegramEmployeeContoller extends Controller
         })->values();
     }
 
+    private function clearHrCache($chatId)
+    {
+        cache()->forget("step_$chatId");
+
+        cache()->forget("employee_company_$chatId");
+        cache()->forget("employee_name_$chatId");
+        cache()->forget("employee_work_phone_$chatId");
+
+        cache()->forget("editing_employee_$chatId");
+
+        cache()->forget("new_name_$chatId");
+        cache()->forget("new_work_phone_$chatId");
+    }
+
+
+
+    private function handleHrStep($chatId, $text, $step)
+    {
+        if(str_starts_with($text, '/')){
+            return false;
+        }
+        if ($step == 'employee_name') {
+
+            cache()->put("employee_name_$chatId", $text);
+            cache()->put("step_$chatId", 'employee_work_phone');
+
+            $this->sendMessage($chatId, "📱 Ish telefonini kiriting:");
+            return false;
+        }
+
+        if ($step == 'employee_work_phone') {
+
+            cache()->put("employee_work_phone_$chatId", $text);
+            cache()->put("step_$chatId", 'employee_personal_phone');
+
+            $this->sendMessage($chatId, "📞 Shaxsiy telefonini kiriting:");
+            return false;
+        }
+
+        if ($step == 'employee_personal_phone') {
+
+            Employee::create([
+                'company'        => cache()->get("employee_company_$chatId"),
+                'full_name'      => cache()->get("employee_name_$chatId"),
+                'work_phone'     => cache()->get("employee_work_phone_$chatId"),
+                'personal_phone' => $text,
+            ]);
+
+            cache()->forget("step_$chatId");
+            cache()->forget("employee_name_$chatId");
+            cache()->forget("employee_work_phone_$chatId");
+            cache()->forget("employee_company_$chatId");
+
+            $this->sendMessage($chatId, "✅ Hodim muvaffaqiyatli qo'shildi");
+
+            return false;
+        }
+
+        if ($step == 'employee_delete_search') {
+
+            $employees = Employee::where('work_phone', 'like', "%{$text}%")->get();
+
+            if ($employees->isEmpty()) {
+
+                $this->sendMessage($chatId, "❌ Hodim topilmadi");
+                return false;
+            }
+
+            $keyboard = [];
+
+            foreach ($employees as $employee) {
+
+                $keyboard[] = [[
+                    'text' => "{$employee->full_name} ({$employee->work_phone})",
+                    'callback_data' => 'delete_'.$employee->id
+                ]];
+            }
+
+            Http::post($this->apiUrl.'sendMessage', [
+                'chat_id' => $chatId,
+                'text' => "O'chiriladigan hodimni tanlang:",
+                'reply_markup' => [
+                    'inline_keyboard' => $keyboard
+                ]
+            ]);
+
+            return false;
+        }
+
+        if ($step == 'employee_edit_search') {
+
+            $employees = Employee::where('work_phone', 'like', "%{$text}%")->get();
+
+            if ($employees->isEmpty()) {
+
+                $this->sendMessage($chatId, "❌ Hodim topilmadi");
+                return false;
+            }
+
+            $keyboard = [];
+
+            foreach ($employees as $employee) {
+
+                $keyboard[] = [[
+                    'text' => "{$employee->full_name} ({$employee->work_phone})",
+                    'callback_data' => 'edit_'.$employee->id
+                ]];
+            }
+
+            Http::post($this->apiUrl.'sendMessage', [
+                'chat_id' => $chatId,
+                'text' => "Tahrirlanadigan hodimni tanlang:",
+                'reply_markup' => [
+                    'inline_keyboard' => $keyboard
+                ]
+            ]);
+
+            return false;
+        }
+
+        if ($step == 'edit_employee_name') {
+
+        cache()->put("new_name_$chatId", $text);
+        cache()->put("step_$chatId", 'edit_employee_work_phone');
+
+        $this->sendMessage($chatId, "📱 Yangi ish telefonini kiriting:");
+
+        return false;
+    }
+
+    if ($step == 'edit_employee_work_phone') {
+
+        cache()->put("new_work_phone_$chatId", $text);
+        cache()->put("step_$chatId", 'edit_employee_personal_phone');
+
+        $this->sendMessage($chatId, "📞 Yangi shaxsiy telefonni kiriting:");
+
+        return false;
+    }
+
+    if ($step == 'edit_employee_personal_phone') {
+
+        $employee = Employee::find(
+            cache()->get("editing_employee_$chatId")
+        );
+
+        if ($employee) {
+
+            $employee->update([
+                'full_name'      => cache()->get("new_name_$chatId"),
+                'work_phone'     => cache()->get("new_work_phone_$chatId"),
+                'personal_phone' => $text,
+            ]);
+        }
+
+        cache()->forget("step_$chatId");
+        cache()->forget("editing_employee_$chatId");
+        cache()->forget("new_name_$chatId");
+        cache()->forget("new_work_phone_$chatId");
+
+        $this->sendMessage(
+            $chatId,
+            "✅ Hodim ma'lumotlari yangilandi"
+        );
+
+        return false;
+    }
+    }
+
+    
+
     private function sendMessage(int $chatId, string $message){
         Http::post('https://api.telegram.org/bot' . $this->token . '/sendMessage', [
             'chat_id' => $chatId,
             'text' => $message,
             'parse_mode' => 'Markdown'
         ]);
+    }
+
+    private function editMessageText(int $chatId, int $messageId, string $message, array $options = []){
+        Http::post('https://api.telegram.org/bot' . $this->token . '/editMessageText', array_merge([
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'text' => $message,
+            'parse_mode' => 'Markdown'
+        ], $options));
     }
 }

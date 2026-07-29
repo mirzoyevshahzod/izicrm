@@ -17,7 +17,9 @@ class MaterialRequestController extends Controller
 
     public function webhook(Request $request): JsonResponse
     {
-        Log::info('Telegram webhook HIT', $request->all());
+	    $start = microtime(true);
+
+	    Log::info('Webhook start');
 
         $update = $request->all();
 
@@ -29,6 +31,11 @@ class MaterialRequestController extends Controller
             $this->materialRequestCallbackHandler->handle($update['callback_query']);
         }
 
+        Log::info('Webhook end', [
+            'time' => microtime(true) - $start
+        ]);
+
         return response()->json(['ok' => true]);
+
     }
 }

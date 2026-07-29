@@ -6,7 +6,6 @@ use App\Models\Driver;
 use App\Models\DriverStep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class TelegramController extends Controller
@@ -145,7 +144,6 @@ class TelegramController extends Controller
             }
 
             $fileInfo = $this->getFile($file_id);
-            Log::info('Result', ['file_id' => $fileInfo]);
 
             if (!isset($fileInfo['result']['file_path'])) {
                 $this->sendMessage($chat_id, "📄 Faylni yuklab bo�lmadi. Qaytadan yuboring.");

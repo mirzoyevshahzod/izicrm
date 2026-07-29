@@ -40,7 +40,10 @@ return [
         'contact_bot_token' => env('TELEGRAM_CONTACT_BOT_TOKEN'),
         'incotruck_request_bot' => env('TELEGRAN_INCOTRUCK_BOT_TOKEN'),
         'egs_materialniy_otchet_bot_token' => env('TELEGRAM_MATERIAL_REQUEST_BOT_TOKEN'),
+        'contact_as_bot_token' => env('TELEGRAM_CONTACT_AS_BOT_TOKEN'),
         'telegram_material_request_group_id' => env('TELEGRAM_MATERIAL_REQUEST_GROUP_ID'),
+        'telegram_tariff_bot_token' => env('TELEGRAM_TARIFF_BOT_TOKEN'),
+        'telegram_super_admin_id' => env('TELEGRAM_SUPER_ADMIN_ID')
     ],
 
 ];

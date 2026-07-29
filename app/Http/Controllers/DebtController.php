@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpWord\TemplateProcessor;
 use App\Imports\AttendanceImport;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -30,7 +28,6 @@ class DebtController extends Controller
     }
 
     public function webhook(Request $request){
-        Log::info('Telegram webhook HIT', $request->all());
         $update = $request->all();
 
         $message = $update['message'] ?? null;
