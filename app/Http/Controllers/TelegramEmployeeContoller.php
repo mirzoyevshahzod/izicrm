@@ -2,19 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Feedback;
+use App\Models\TelegramBot;
+use App\Models\TelegramChannel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use App\Models\SearchHistory;
 use App\Models\Employee;
 use Illuminate\Support\Facades\Log;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 class TelegramEmployeeContoller extends Controller
 {
     private string $token;
 
     protected string $apiUrl;
+
+    protected string $feedbackGroupId;
 
     private array $hrIds = [
         997696865,
@@ -29,6 +37,7 @@ class TelegramEmployeeContoller extends Controller
     {
         $this->token = config('services.telegram.contact_bot_token');
         $this->apiUrl = 'https://api.telegram.org/bot' . $this->token . '/';
+        $this->feedbackGroupId = config('services.telegram.feedback_group_id');
     }
 
     public function webhook(Request $request)
@@ -46,6 +55,10 @@ class TelegramEmployeeContoller extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
     private function handleMessage(array $message)
     {
         $chatId = $message['chat']['id'];
@@ -64,19 +77,24 @@ class TelegramEmployeeContoller extends Controller
 
         $step = cache()->get("step_$chatId");
 
+
         if (!$user && !in_array($text, ['/start', '/register']) && !$step) {
             $this->sendMessage($chatId, "Botdan foydalanish uchun avval ro'yxatdan o'ting.\n/register");
             return true;
         }
 
-        if (in_array($chatId, $this->hrIds) && $step) {
-            $this->handleHrStep($chatId, $text, $step);
+        if ($step == 'employee_search') {
+            return $this->handleEmployeeSearchStep($chatId, $text);
+        }
+
+        if ($this->handleFeedbackStep($chatId, $text, $step)) {
             return true;
         }
 
 
-        if ($user && $text && $text[0] !== '/') {
-           $this->handleEmployeeSearch($chatId, $text);
+        if (in_array($chatId, $this->hrIds) && $step) {
+            $this->handleHrStep($chatId, $text, $step);
+            return true;
         }
 
         return false;
@@ -98,6 +116,21 @@ class TelegramEmployeeContoller extends Controller
                 return $this->handleHistoryCommand($chatId);
             case '/employees':
                 return $this->handleEmployeesCommand($chatId);
+            case '🏢 Компания ҳақида':
+                $this->showCompanyInformation($chatId);
+                break;
+            case '🤖 Компания ботлари':
+                $this->showCompanyBotInformation($chatId);
+                break;
+            case  '📢 Компания каналлари':
+                $this->showCompanyChannelsInformation($chatId);
+                break;
+            case '💬 Таклиф ва шикоятлар':
+                $this->storeFeedback($chatId);
+                break;
+            case '📞 Контактлар':
+                $this->searchEmployees($chatId);
+                break;
             default:
                 return false;
         }
@@ -109,12 +142,30 @@ class TelegramEmployeeContoller extends Controller
     {
         if ($user) {
 
-            $this->sendMessage(
-                $chatId,
-                "👋 Assalomu alaykum!\n\n" .
-                "🔎 Qaysi xodimni qidiryapsiz?\n" .
-                "Iltimos, xodimning ismini yoki familiyasini yozing."
-            );
+
+            $keyboard = [
+                [
+                    ['text' => '📞 Контактлар'],
+                    ['text' => '🏢 Компания ҳақида'],
+                ],
+                [
+                    ['text' => '🤖 Компания ботлари'],
+                    ['text' => '📢 Компания каналлари'],
+                ],
+                [
+                    ['text' => '💬 Таклиф ва шикоятлар'],
+                ],
+            ];
+
+            Http::post('https://api.telegram.org/bot' . $this->token . '/sendMessage', [
+                'chat_id' => $chatId,
+                'text' => 'Қуйидагилардан бирини танланг:',
+                'parse_mode' => 'html',
+                'reply_markup' => json_encode([
+                    'keyboard' => $keyboard,
+                    'resize_keyboard' => true,
+                ])
+            ]);
 
 
         } else {
@@ -282,26 +333,18 @@ class TelegramEmployeeContoller extends Controller
             return true;
         }
 
-        Contact::create([
+        $user = Contact::create([
             'chat_id' => $chatId,
             'full_name' => $employee->full_name,
             'phone_number' => $phone
         ]);
 
-        Http::post($this->apiUrl . 'sendMessage', [
-            'chat_id' => $chatId,
-            'text' => "✅ Siz muvaffaqiyatli ro'yxatdan o'tdingiz\n\n" .
-                "👤 {$employee->full_name}\n\n" .
-                "🔎 Qaysi xodimni qidiryapsiz?",
-            'reply_markup' => json_encode([
-                'remove_keyboard' => true,
-            ]),
-        ]);
+        $this->handleStartCommand($chatId, $user);
 
         return true;
     }
 
-    private function handleEmployeeSearch($chatId, $text) :bool
+    private function handleEmployeeSearch($chatId, $text): bool
     {
         $contacts = $this->searchContacts($text);
 
@@ -351,6 +394,198 @@ class TelegramEmployeeContoller extends Controller
         return true;
     }
 
+    public function showCompanyInformation(int $chatId): bool
+    {
+        $companies = Company::orderBy('name')->get();
+
+        if ($companies->isEmpty()) {
+            $this->sendMessage($chatId, "❌ Компаниялар рўйхати топилмади.");
+            return true;
+        }
+
+        $message = "🏢 *КОМПАНИЯЛАР РЎЙХАТИ*\n\n";
+
+        foreach ($companies as $company) {
+            $message .= "🏷 *{$company->code}*\n";
+            $message .= "🏢 {$company->name}\n";
+            $message .= "🌐 {$company->website}\n\n";
+        }
+
+        $this->sendMessage($chatId, $message);
+
+        return true;
+    }
+
+    public function showCompanyBotInformation(int $chatId): bool
+    {
+        $bots = TelegramBot::query()->orderBy('title')->get();
+
+        if ($bots->isEmpty()) {
+            $this->sendMessage($chatId, "❌ Компания ботлари топилмади.");
+            return true;
+        }
+
+        $message = "🤖 *КОМПАНИЯ БОТЛАРИ*\n\n";
+
+        foreach ($bots as $bot) {
+            $message .= "━━━━━━━━━━━━━━━━━━\n";
+            $message .= "🤖 *{$bot->title}*\n\n";
+            $message .= "{$bot->description}\n\n";
+            $message .= "🔗 {$bot->username}\n\n";
+        }
+
+        $this->sendMessage($chatId, $message);
+
+        return true;
+    }
+
+    public function showCompanyChannelsInformation(int $chatId): bool
+    {
+        $channels = TelegramChannel::query()->orderBy('title')->get();
+
+        if ($channels->isEmpty()) {
+            $this->sendMessage($chatId, "❌ Компания каналлари топилмади.");
+            return true;
+        }
+
+        $message = "📢 *КОМПАНИЯ КАНАЛЛАРИ*\n\n";
+
+        foreach ($channels as $channel) {
+            $message .= "━━━━━━━━━━━━━━━━━━\n";
+            $message .= "📢 *{$channel->title}*\n\n";
+            $message .= "📝 {$channel->description}\n\n";
+            $message .= "🔗 {$channel->username}\n\n";
+        }
+
+        $this->sendMessage($chatId, $message);
+
+        return true;
+    }
+
+    public function storeFeedback(int $chatId): bool
+    {
+        $feedback = Feedback::create([
+            'bot_slug' => 'INFORMATION_BOT',
+        ]);
+
+        cache()->put("feedback_$chatId", $feedback->id);
+        cache()->put("step_$chatId", "feedback_full_name");
+
+        $this->sendMessage(
+            $chatId,
+            "👤 Илтимос, Ф.И.Ш.ингизни киритинг."
+        );
+
+        return true;
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    private function handleFeedbackStep(int $chatId, string $text, ?string $step): bool
+    {
+
+        Log::info('Feedback', [
+            'step' => $step,
+            'text' => $text,
+        ]);
+
+        if ($step == 'feedback_full_name') {
+
+            Feedback::find(cache()->get("feedback_$chatId"))
+                ?->update([
+                    'full_name' => $text,
+                ]);
+
+            cache()->put("step_$chatId", "feedback_type");
+
+            $keyboard = [
+                'keyboard' => [
+                    [['text' => '💡 Таклиф']],
+                    [['text' => '⚠️ Шикоят']],
+                ],
+                'resize_keyboard' => true,
+                'one_time_keyboard' => true,
+            ];
+
+            Http::post($this->apiUrl.'sendMessage',[
+                'chat_id'=>$chatId,
+                'text'=>"📂 Мурожаат турини танланг:",
+                'reply_markup'=>json_encode($keyboard),
+            ]);
+
+            return true;
+        }
+
+        if ($step == 'feedback_type') {
+
+            Feedback::find(cache()->get("feedback_$chatId"))
+                ?->update([
+                    'type' => $text == '⚠️ Шикоят'
+                        ? 'complaint'
+                        : 'suggestion',
+                ]);
+
+            cache()->put("step_$chatId","feedback_message");
+
+            $this->sendMessage(
+                $chatId,
+                "✍️ Мурожаатингизни ёзинг."
+            );
+
+            return true;
+        }
+
+        if ($step == 'feedback_message') {
+
+            $feedback = Feedback::find(cache()->get("feedback_$chatId"));
+
+            $feedback?->update([
+                'message' => $text,
+            ]);
+
+            $message = "📩 *Янги мурожаат*\n\n";
+            $message .= "👤 *Ф.И.Ш:* {$feedback->full_name}\n";
+            $message .= "📂 *Тури:* " .
+                ($feedback->type == 'complaint' ? '⚠️ Шикоят' : '💡 Таклиф') . "\n\n";
+            $message .= "✍️ *Матн:*\n{$text}";
+
+            Log::info('Feedback' . $this->feedbackGroupId);
+            $this->sendMessage($this->feedbackGroupId, $message);
+
+            cache()->forget("feedback_$chatId");
+            cache()->forget("step_$chatId");
+
+            $this->sendMessage(
+                $chatId,
+                "✅ Раҳмат!\n\nМурожаатингиз қабул қилинди."
+            );
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function searchEmployees(int $chatId): bool
+    {
+        cache()->put("step_$chatId", "employee_search");
+
+        $this->sendMessage(
+            $chatId,
+            "🔎 Қайси ходимни қидиряпсиз?\n\nИлтимос, ходимнинг исми ёки фамилиясини киритинг."
+        );
+
+        return true;
+    }
+
+    private function handleEmployeeSearchStep(int $chatId, string $text): bool
+    {
+        $this->handleEmployeeSearch($chatId, $text);
+
+        return true;
+    }
 
     private function handleCallback($callback)
     {
@@ -396,7 +631,7 @@ class TelegramEmployeeContoller extends Controller
         }
 
         if (str_starts_with($data, 'delete_')) {
-            return $this->deleteEmployee($chatId, $data);
+            return $this->deleteEmployee($chatId, $data, $messageId);
         }
 
         if ($data == 'employee_edit') {
@@ -427,7 +662,6 @@ class TelegramEmployeeContoller extends Controller
     }
 
 
-
     private function handleEmployeeDelete($chatId): bool
     {
 
@@ -442,7 +676,7 @@ class TelegramEmployeeContoller extends Controller
 
     }
 
-    private function deleteEmployee(int $chatId, string $data): bool
+    private function deleteEmployee(int $chatId, string $data, int $messageId): bool
     {
         $this->clearHrCache($chatId);
         $employeeId = str_replace('delete_', '', $data);
@@ -457,8 +691,9 @@ class TelegramEmployeeContoller extends Controller
 
         $employee->delete();
 
-        $this->sendMessage(
+        $this->editMessageText(
             $chatId,
+            $messageId,
             "✅ {$name} o'chirildi"
         );
 
@@ -594,7 +829,7 @@ class TelegramEmployeeContoller extends Controller
 
         $employees = Employee::all();
 
-        Log::info('Employees searched',[
+        Log::info('Employees searched', [
             'employees' => $employees->count()
         ]);
 
@@ -646,7 +881,7 @@ class TelegramEmployeeContoller extends Controller
     }
 
 
-    private function handleHrStep($chatId, $text, $step)
+    private function handleHrStep($chatId, $text, ?string $step)
     {
 
         if (str_starts_with($text, '/')) {
@@ -668,7 +903,7 @@ class TelegramEmployeeContoller extends Controller
         return false;
     }
 
-    private function handleCreateEmployeeStep(int $chatId, string $text, string $step) :bool
+    private function handleCreateEmployeeStep(int $chatId, string $text, string $step): bool
     {
         if ($step == 'employee_name') {
 
@@ -710,7 +945,7 @@ class TelegramEmployeeContoller extends Controller
         return false;
     }
 
-    private function handleDeleteEmployeeStep(int $chatId, string $text, string $step) :bool
+    private function handleDeleteEmployeeStep(int $chatId, string $text, string $step): bool
     {
         if ($step == 'employee_delete_search') {
 
@@ -747,7 +982,7 @@ class TelegramEmployeeContoller extends Controller
 
     }
 
-    private function handleEditEmployeeStep(int $chatId, string $text, string $step) :bool
+    private function handleEditEmployeeStep(int $chatId, string $text, string $step): bool
     {
         if ($step == 'employee_edit_search') {
 

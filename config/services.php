@@ -43,7 +43,8 @@ return [
         'contact_as_bot_token' => env('TELEGRAM_CONTACT_AS_BOT_TOKEN'),
         'telegram_material_request_group_id' => env('TELEGRAM_MATERIAL_REQUEST_GROUP_ID'),
         'telegram_tariff_bot_token' => env('TELEGRAM_TARIFF_BOT_TOKEN'),
-        'telegram_super_admin_id' => env('TELEGRAM_SUPER_ADMIN_ID')
+        'telegram_super_admin_id' => env('TELEGRAM_SUPER_ADMIN_ID'),
+        'feedback_group_id' => env('TELEGRAM_FEEDBACK_GROUP_ID'),
     ],
 
 ];

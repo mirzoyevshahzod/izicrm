@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('feedback', function (Blueprint $table) {
+        Schema::create('feedbacks', function (Blueprint $table) {
             $table->id();
             $table->string('bot_slug');
             $table->string('full_name')->nullable();
-            $table->string('message');
+            $table->string('message')->nullable();
             $table->enum('type', ['complaint', 'suggestion'])->default('suggestion');
             $table->boolean('is_read')->default(true);
             $table->timestamps();
