@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-class TelegramEmployeeContoller extends Controller
+class TelegramEmployeeController extends Controller
 {
     private string $token;
 
