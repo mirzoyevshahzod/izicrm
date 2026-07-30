@@ -23,8 +23,8 @@ class DatabaseSeeder extends Seeder
 //        ]);
 
         $this->call([
-            EmployeeSeeder::class,
-            SuperAdminSeeder::class,
+//            EmployeeSeeder::class,
+//            SuperAdminSeeder::class,
             CompanySeeder::class,
             TelegramBotSeeder::class,
             TelegramChannelSeeder::class,
