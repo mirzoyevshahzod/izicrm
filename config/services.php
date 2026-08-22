@@ -45,6 +45,9 @@ return [
         'telegram_tariff_bot_token' => env('TELEGRAM_TARIFF_BOT_TOKEN'),
         'telegram_super_admin_id' => env('TELEGRAM_SUPER_ADMIN_ID'),
         'feedback_group_id' => env('TELEGRAM_FEEDBACK_GROUP_ID'),
+        'egs_attendance_bot_token' => env('TELEGRAM_EGS_ATTENDANCE_BOT_TOKEN'),
+        'egs_hr_ids' => array_filter(explode(',', env('EGS_HR_IDS', ''))),
+        'egs_boss_ids' => array_filter(explode(',', env('EGS_BOSS_IDS', ''))),
     ],
 
 ];

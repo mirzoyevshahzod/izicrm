@@ -57,7 +57,7 @@ class TelegramDavomatController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    
+
     /**
      * Message handler
      */
@@ -127,7 +127,7 @@ class TelegramDavomatController extends Controller
             $companyData = $this->getCompanyData($lateEvent->company);
 
             //bazaga yozamiz
-            
+
             $this->storeAttendance([
                 'chat_id'  => $chatId,
                  'company'       => $companyData['company'],
@@ -299,7 +299,7 @@ class TelegramDavomatController extends Controller
             );
             return;
         }
-        
+
 
         // ▶️ Excel kutilmoqda (faqat HR)
         $state = cache()->get("hr_state_{$chatId}");
@@ -484,7 +484,7 @@ class TelegramDavomatController extends Controller
             ],
         ];
 
-       
+
 
         Http::post($this->apiUrl . '/editMessageText', [
             'chat_id'    => $chatId,
@@ -514,7 +514,7 @@ class TelegramDavomatController extends Controller
 
         return $attendance;
     }
-   
+
 
     /**
      * Excel upload va qayta ishlash
@@ -527,7 +527,7 @@ class TelegramDavomatController extends Controller
        if(in_array($ext, ['xls', 'xlsx', 'xltx']) === false) {
             $this->sendMessage($chatId, "❌ Iltimos, faqat .xls yoki .xlsx formatdagi faylni yuboring.");
             return;
-        }   
+        }
 
         // 2️⃣ Telegram file path
         $fileInfo = Http::get($this->apiUrl . '/getFile', [
@@ -575,7 +575,7 @@ class TelegramDavomatController extends Controller
 
         $lateCount   = 0;
         $onTimeCount = 0;
-        $lateChatIds = []; 
+        $lateChatIds = [];
         foreach ($rows as $row) {
 
             // Excel indexlari (0-based)
@@ -609,7 +609,7 @@ class TelegramDavomatController extends Controller
                     $timeCarbon->minute
                 );
 
-            } 
+            }
             // Agar time oddiy string bo‘lsa (09:15)
             else {
 
@@ -642,7 +642,7 @@ class TelegramDavomatController extends Controller
             if ($lateMinutes > 0) {
                 // 🔴 KECH
                 $lateCount++;
-                $lateChatIds[] = (int)$userChatId; 
+                $lateChatIds[] = (int)$userChatId;
 
                 \DB::table('late_events')->updateOrInsert(
                     [
@@ -668,8 +668,8 @@ class TelegramDavomatController extends Controller
                     ."Iltimos, kech qolish sababini quyidagi tugma orqali yozib yuboring.",
                     'write_reason'
                 );
-            
-            } 
+
+            }
         }
 
        // 🔵 Excelda yo‘q bo‘lganlarga rahmat yuborish
@@ -743,7 +743,7 @@ class TelegramDavomatController extends Controller
         $minutes = $totalMinutes % 60;
 
         if ($hours > 0) {
-            return "{$hours} час {$minutes} минут";   
+            return "{$hours} час {$minutes} минут";
         }
 
         return "{$minutes} минут";
