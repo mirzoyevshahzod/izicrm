@@ -45,11 +45,11 @@ return [
 
         'hr_db' => [
             'driver' => 'mysql',
-            'host' => env('HR_DB_HOST', '192.168.10.1'),
-            'port' => env('HR_DB_PORT', '3306'),
-            'database' => env('HR_DB_DATABASE', 'hikcentral_db'),
-            'username' => env('HR_DB_USERNAME', 'HR'),
-            'password' => env('HR_DB_PASSWORD', ''),
+            'host' => '192.168.10.1',
+            'port' => '3306',
+            'database' => 'hikcentral_db',
+            'username' => 'HR',
+            'password' => 'P@ssw0rd@321',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
