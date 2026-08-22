@@ -214,7 +214,8 @@
 
             <!-- Tugmalar -->
             <div class="button-group">
-                <button id="backTo" class="btn-delete">Ortga</button>
+                <button id="backTo" class="btn-logout">Ortga</button>
+                <button id="logout" class="btn-delete">Logout</button>
                 <!-- <button class="btn-edit">Tahrirlash</button>
                 <button class="btn-delete">O'chirish</button> -->
             </div>
@@ -231,6 +232,28 @@
                     } else {
                         window.location.href = '/';
                     }
+                });
+
+                document.getElementById('logout').addEventListener('click', function() {
+                    // Logout qilish uchun API chaqiruvi
+                    fetch('/api/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('auth_token'),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Tokenni o'chirish
+                            localStorage.removeItem('auth_token');
+                            window.location.href = '/attendance-login';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Logout xatoligi:', error);
+                        alert('Logout qilishda xatolik yuz berdi.');
+                    });
                 });
             </script>
         </div>

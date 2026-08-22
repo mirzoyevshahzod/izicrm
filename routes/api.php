@@ -40,6 +40,8 @@ Route::post('/attendanceLogin', [AttendanceController::class, 'attendanceLogin']
 Route::post('/debtLogin', [DebtViewController::class, 'debtLogin']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+
     Route::get('/all-drivers', [DriversController::class, 'index']);
     Route::get('/all-operator', [DriversController::class, 'getOperationUsers']);
     Route::delete('/delete-user/{id}', [DriversController::class, 'deleteOperator']);
@@ -50,7 +52,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'attendance']);
     Route::get('/attendances/search', [AttendanceController::class, 'searchAttendance']);
     Route::get('/attendances/export', [AttendanceController::class, 'exportAttendance']);
-
 });
 
     Route::get('/admin/debts', [DebtViewController::class, 'index']);

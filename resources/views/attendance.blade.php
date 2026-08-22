@@ -198,6 +198,22 @@
             background: #059669;
         }
 
+        .btn-logout {
+            background: #ff4d4f;
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: #ff7875;
+        }
+
         .btn-download {
             background: #5a67d8;;
             color: white;
@@ -240,6 +256,7 @@
             <div class="actions-time">
                 <button class="btn-download">Faylni Yuklash</button>
                 <button class="btn-add" id="profile">Profile</button>
+                <button class="btn-logout" id="logout">Logout</button>
             </div>
     </div>
     <script>
@@ -247,6 +264,31 @@
                     // Bu yerga sahifa URLini yozing
                     window.location.href = '/admin-profile';
                 });
+
+        document.getElementById('logout').addEventListener('click', function() {
+                        // Logout qilish uchun API chaqiruvi
+                        fetch('/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('auth_token'),
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                // Tokenni o'chirish
+                                localStorage.removeItem('auth_token');
+                                // Login sahifasiga yo'naltirish
+                                window.location.href = '/attendance-login';
+                            } else {
+                                alert('Logout qilishda xatolik yuz berdi.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Xatolik:', error);
+                            alert('Logout qilishda xatolik yuz berdi.');
+                        });
+                    });
     </script>
 
     <table>
