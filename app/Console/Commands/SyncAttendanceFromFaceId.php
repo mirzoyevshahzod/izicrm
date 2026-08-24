@@ -194,6 +194,8 @@ class SyncAttendanceFromFaceId extends Command
             'updated_at'   => now(),
         ]);
 
+        $lateDuration = $this->formatLateDuration($lateMinutes);
+
         // 🚨 Boshliqlarga DARHOL xabar — sababni kutmasdan
         $bossIds = config('services.telegram.egs_boss_ids', []);
         $hrIds   = config('services.telegram.egs_hr_ids', []);
@@ -204,7 +206,7 @@ class SyncAttendanceFromFaceId extends Command
             ."🏢 Bo'lim: {$row->department}\n"
             ."🚪 Eshik: {$row->door_name}\n"
             ."⏰ Vaqt: {$arrival->format('H:i:s')}\n"
-            ."⏱ Kech qoldi: {$lateMinutes} daqiqa";
+            ."⏱ Kech qoldi: {$lateDuration}";
 
         $bossText = $baseText . "\n\n_Sabab hali yozilmagan — xodim javob yozganda tushuntirish xati generatsiya qilinadi._";
 
@@ -233,6 +235,20 @@ class SyncAttendanceFromFaceId extends Command
                 'write_late_reason'
             );
         }
+    }
+
+    private function formatLateDuration(int $totalMinutes): string
+    {
+        $hours   = intdiv($totalMinutes, 60);
+        $minutes = $totalMinutes % 60;
+
+        if ($hours > 0) {
+            return $minutes > 0
+                ? "{$hours} soat {$minutes} daqiqa"
+                : "{$hours} soat";
+        }
+
+        return "{$minutes} daqiqa";
     }
 
     private function sendMessage(int $chatId, string $text): void
