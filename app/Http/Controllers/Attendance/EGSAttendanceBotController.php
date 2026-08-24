@@ -79,7 +79,7 @@ class EGSAttendanceBotController extends Controller
 
                 $this->sendMessage(
                     $chatId,
-                    "✅ Raqam qabul qilindi.\n\n📝 Endi ism va familiyangizni kiriting.\n\nMasalan: Firdavs Raxmatov"
+                    "✅ Raqam qabul qilindi.\n\n📝 Endi ism-familiyangizni YOKI HR bergan ID raqamingizni kiriting.\n\nMasalan: Firdavs Raxmatov\nyoki: 0000000021"
                 );
             } else {
                 $this->sendMessageWithContactButton(
@@ -123,8 +123,36 @@ class EGSAttendanceBotController extends Controller
     /**
      * FIO kiritilganda — bazadan qidirib, topilsa chat_id va phone yozadi
      */
+    /**
+     * Ism-familiya YOKI person_id kiritilganda — bazadan qidirib, topilsa chat_id va phone yozadi
+     */
     private function handleFioInput(int $chatId, string $text): void
     {
+        $text = trim($text);
+
+        if (empty($text)) {
+            $this->sendMessage($chatId, "❌ Iltimos, ism-familiyangizni yoki ID raqamingizni kiriting.");
+            return;
+        }
+
+        // 1️⃣ Avval — bu ID raqammi? (faqat raqamlardan iborat bo'lsa)
+        if (ctype_digit($text)) {
+            $matched = $this->findByPersonId($text);
+
+            if (!$matched) {
+                $this->sendMessage(
+                    $chatId,
+                    "❌ Bunday ID raqamli xodim topilmadi.\n\n"
+                    ."Iltimos, ID raqamingizni tekshirib qayta yuboring, yoki ism-familiyangizni yozing."
+                );
+                return;
+            }
+
+            $this->completeRegistration($chatId, $matched);
+            return;
+        }
+
+        // 2️⃣ Aks holda — ism-familiya sifatida qidiramiz
         $normalizedInput = $this->normalizeName($text);
 
         if (empty($normalizedInput)) {
@@ -132,7 +160,6 @@ class EGSAttendanceBotController extends Controller
             return;
         }
 
-        // Hali biriktirilmagan xodimlarni olamiz (kichik jadval — PHP darajasida solishtiramiz)
         $candidates = DB::table('attendance_employees')
             ->whereNull('chat_id')
             ->get(['id', 'person_id', 'first_name', 'last_name']);
@@ -154,11 +181,46 @@ class EGSAttendanceBotController extends Controller
                 $chatId,
                 "❌ Sizning ism-familiyangiz ro'yxatda topilmadi.\n\n"
                 ."Iltimos, to'g'ri yozganingizga ishonch hosil qiling (masalan: Firdavs Raxmatov), "
-                ."yoki HR bilan bog'laning."
+                ."yoki HR bergan ID raqamingizni yuboring, yoki HR bilan bog'laning."
             );
             return;
         }
 
+        $this->completeRegistration($chatId, $matched);
+    }
+
+    /**
+     * Kiritilgan raqamni person_id bilan solishtiradi (nol bilan to'ldirilgan yoki oddiy)
+     */
+    private function findByPersonId(string $inputId): ?object
+    {
+        // to'g'ridan-to'g'ri moslik
+        $matched = DB::table('attendance_employees')
+            ->whereNull('chat_id')
+            ->where('person_id', $inputId)
+            ->first(['id', 'person_id', 'first_name', 'last_name']);
+
+        if ($matched) {
+            return $matched;
+        }
+
+        // person_id 10 xonali, nol bilan to'ldirilgan (masalan "21" -> "0000000021")
+        $padded = str_pad($inputId, 10, '0', STR_PAD_LEFT);
+
+        return DB::table('attendance_employees')
+            ->whereNull('chat_id')
+            ->where('person_id', $padded)
+            ->first(['id', 'person_id', 'first_name', 'last_name']);
+    }
+
+    /**
+     * Ro'yxatdan o'tishni yakunlaydi — chat_id va phone yozadi
+     */
+    /**
+     * Ro'yxatdan o'tishni yakunlaydi — chat_id va phone yozadi
+     */
+    private function completeRegistration(int $chatId, object $matched): void
+    {
         $phone = cache()->get("egs_register_phone_{$chatId}");
 
         DB::table('attendance_employees')
@@ -172,10 +234,14 @@ class EGSAttendanceBotController extends Controller
         cache()->forget("egs_register_state_{$chatId}");
         cache()->forget("egs_register_phone_{$chatId}");
 
-        $this->sendMessage(
-            $chatId,
-            "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n👤 {$matched->first_name} {$matched->last_name}\n\nEndi kech qolganingizda bot sizga avtomatik xabar yuboradi."
-        );
+        // ✅ Klaviaturani (telefon yuborish tugmasini) olib tashlaymiz
+        Http::post($this->apiUrl . '/sendMessage', [
+            'chat_id'    => $chatId,
+            'text'       => "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n👤 {$matched->first_name} {$matched->last_name}\n\nEndi kech qolganingizda bot sizga avtomatik xabar yuboradi.",
+            'reply_markup' => [
+                'remove_keyboard' => true,
+            ],
+        ]);
     }
 
     /**

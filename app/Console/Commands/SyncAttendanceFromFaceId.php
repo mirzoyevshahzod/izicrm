@@ -196,18 +196,32 @@ class SyncAttendanceFromFaceId extends Command
 
         // 🚨 Boshliqlarga DARHOL xabar — sababni kutmasdan
         $bossIds = config('services.telegram.egs_boss_ids', []);
+        $hrIds   = config('services.telegram.egs_hr_ids', []);
+        $notifyIds = array_unique((array)array_merge($bossIds, $hrIds));
+
+        $baseText = "🔴 *Kech qolish!*\n\n"
+            ."👤 {$employee->first_name} {$employee->last_name}\n"
+            ."🏢 Bo'lim: {$row->department}\n"
+            ."🚪 Eshik: {$row->door_name}\n"
+            ."⏰ Vaqt: {$arrival->format('H:i:s')}\n"
+            ."⏱ Kech qoldi: {$lateMinutes} daqiqa";
+
+        $bossText = $baseText . "\n\n_Sabab hali yozilmagan — xodim javob yozganda tushuntirish xati generatsiya qilinadi._";
 
         foreach ($bossIds as $bossId) {
-            $this->sendMessage(
-                (int) $bossId,
-                "🔴 *Kech qolish!*\n\n"
-                ."👤 {$employee->first_name} {$employee->last_name}\n"
-                ."🏢 Bo'lim: {$row->department}\n"
-                ."🚪 Eshik: {$row->door_name}\n"
-                ."⏰ Vaqt: {$arrival->format('H:i:s')}\n"
-                ."⏱ Kech qoldi: {$lateMinutes} daqiqa\n\n"
-                ."_Sabab hali yozilmagan — xodim javob yozganda alohida xabar boradi._"
-            );
+            $this->sendMessage((int) $bossId, $bossText);
+        }
+
+        $hrText = $baseText;
+
+        if (!$employee->chat_id) {
+            $hrText .= "\n\n⚠️ Xodim botda ro'yxatdan o'tmagan, shuning uchun unga xabar yuborib bo'lmadi.";
+        } else {
+            $hrText .= "\n\n_Sabab hali yozilmagan — xodim javob yozganda tushuntirish xati generatsiya qilinadi._";
+        }
+
+        foreach ($hrIds as $hrId) {
+            $this->sendMessage((int) $hrId, $hrText);
         }
 
         if ($employee->chat_id) {
