@@ -208,16 +208,17 @@ class SyncAttendanceFromFaceId extends Command
             ."⏰ Vaqt: {$arrival->format('H:i:s')}\n"
             ."⏱ Kech qoldi: {$lateDuration}";
 
-        $bossText = $baseText . "\n\n_Sabab hali yozilmagan — xodim javob yozganda tushuntirish xati generatsiya qilinadi._";
-
         foreach ($bossIds as $bossId) {
-            $this->sendMessage((int) $bossId, $bossText);
+            $this->sendMessage((int) $bossId, $baseText);
         }
 
         $hrText = $baseText;
 
         if (!$employee->chat_id) {
-            $hrText .= "\n\n⚠️ Xodim botda ro'yxatdan o'tmagan, shuning uchun unga xabar yuborib bo'lmadi.";
+            $hrText .=
+                "\n\n⚠️ Xodim botda ro'yxatdan o'tmagan, shuning uchun unga xabar yuborib bo'lmadi.
+                \nXodim Royxatdan o'tishi uchun ID: {$row->person_id}";
+
         } else {
             $hrText .= "\n\n_Sabab hali yozilmagan — xodim javob yozganda tushuntirish xati generatsiya qilinadi._";
         }
