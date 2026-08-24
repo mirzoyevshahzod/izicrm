@@ -99,6 +99,16 @@ class EGSAttendanceBotController extends Controller
 
         // ▶️ /start
         if ($text === '/start') {
+            $bossId = config('services.telegram.egs_boss_ids', []);
+
+            if(in_array($chatId, $bossId)) {
+                $this->sendMessage(
+                    $chatId,
+                    "👋 Assalomu alaykum!\n\n"
+                    . "Sizga xodimlarning davomat holati bo‘yicha xabarnomalar yuborib boriladi. 📊"
+                );
+                return response()->json(['ok' => true]);
+            }
 
             if ($existingEmployee) {
                 $this->sendMessage(
