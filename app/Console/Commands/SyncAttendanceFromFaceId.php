@@ -28,6 +28,7 @@ class SyncAttendanceFromFaceId extends Command
 
     public function handle(): int
     {
+        Log::info('attendance:sync ishga tushdi', ['time' => now()->toDateTimeString()]);
         // 🧪 TEST REJIMI — cursor bilan ishlamaydi, faqat bitta yozuvni sinaydi
         if ($testId = $this->option('test')) {
             $row = DB::connection('hr_db')
