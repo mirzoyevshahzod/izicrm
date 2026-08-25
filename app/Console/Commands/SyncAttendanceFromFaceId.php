@@ -158,15 +158,16 @@ class SyncAttendanceFromFaceId extends Command
 
         $startHour = $arrival->dayOfWeek === Carbon::SATURDAY ? 10 : 9;
         $workStart = $arrival->copy()->setTime($startHour, 0, 0);
-        $lateMinutes = $workStart->diffInMinutes($arrival, false);
+        $lateSeconds = $workStart->diffInSeconds($arrival, false);
+        $lateMinutes = $lateSeconds > 0 ? max(1, intdiv($lateSeconds, 60)) : 0;
 
-        $this->line("{$employee->first_name} {$employee->last_name} - {$arrival->format('H:i:s')} - kech: {$lateMinutes} daqiqa");
+        $this->line("{$employee->first_name} {$employee->last_name} - {$arrival->format('H:i:s')} - kech: {$lateSeconds} soniya");
 
         if ($isDryRun) {
             return;
         }
 
-        if ($lateMinutes > 0) {
+        if ($lateSeconds > 0) {
             $this->handleLate($employee, $row, $arrival, $lateMinutes);
         } else {
             if ($employee->chat_id) {
@@ -251,7 +252,6 @@ class SyncAttendanceFromFaceId extends Command
 
         return "{$minutes} daqiqa";
     }
-
     private function sendMessage(int $chatId, string $text): void
     {
         Http::post($this->apiUrl . '/sendMessage', [
