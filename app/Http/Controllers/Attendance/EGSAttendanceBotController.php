@@ -182,7 +182,7 @@ class EGSAttendanceBotController extends Controller
             return;
         }
 
-        // 1️⃣ Avval — bu ID raqammi? (faqat raqamlardan iborat bo'lsa)
+        // 1️⃣ Avval — bu ID raqammi?
         if (ctype_digit($text)) {
             $matched = $this->findByPersonId($text);
 
@@ -199,7 +199,7 @@ class EGSAttendanceBotController extends Controller
             return;
         }
 
-        // 2️⃣ Aks holda — ism-familiya sifatida qidiramiz
+        // 2️⃣ Ism-familiya — avval ANIQ moslikni qidiramiz
         $normalizedInput = $this->normalizeName($text);
 
         if (empty($normalizedInput)) {
@@ -211,31 +211,72 @@ class EGSAttendanceBotController extends Controller
             ->whereNull('chat_id')
             ->get(['id', 'person_id', 'first_name', 'last_name']);
 
-        $matched = null;
-
         foreach ($candidates as $employee) {
             $normalizedDbName = $this->normalizeName($employee->first_name . ' ' . $employee->last_name);
             $normalizedDbNameReversed = $this->normalizeName($employee->last_name . ' ' . $employee->first_name);
 
             if ($normalizedInput === $normalizedDbName || $normalizedInput === $normalizedDbNameReversed) {
-                $matched = $employee;
-                break;
+                $this->completeRegistration($chatId, $employee);
+                return;
             }
         }
 
-        if (!$matched) {
-            $this->sendMessage(
-                $chatId,
-                "❌ Sizning ism-familiyangiz ro'yxatda topilmadi.\n\n"
-                . "Iltimos, to'g'ri yozganingizga ishonch hosil qiling (masalan: Firdavs Raxmatov), "
-                . "yoki HR bergan ID raqamingizni yuboring, yoki HR bilan bog'laning."
-            );
+        // 3️⃣ Aniq moslik topilmadi — QISMAN moslikni qidiramiz
+        $inputWords = array_filter(explode(' ', $normalizedInput));
+        $fuzzyMatches = [];
+
+        foreach ($candidates as $employee) {
+            $dbFullName = $this->normalizeName($employee->first_name . ' ' . $employee->last_name);
+
+            $matchedWords = 0;
+            foreach ($inputWords as $word) {
+                if (mb_strlen($word) < 3) {
+                    continue; // juda qisqa so'zlarni e'tiborsiz qoldiramiz
+                }
+                if (str_contains($dbFullName, $word)) {
+                    $matchedWords++;
+                }
+            }
+
+            // Kiritilgan so'zlarning kamida yarmi (va kamida 1 tasi) mos kelsa — nomzod
+            if ($matchedWords > 0 && $matchedWords >= ceil(count($inputWords) / 2)) {
+                $fuzzyMatches[] = $employee;
+            }
+        }
+
+        if (count($fuzzyMatches) === 1) {
+            $this->completeRegistration($chatId, $fuzzyMatches[0]);
             return;
         }
 
-        $this->completeRegistration($chatId, $matched);
-    }
+        if (count($fuzzyMatches) > 1) {
+            // Bir nechta nomzod — tanlash uchun tugmalar
+            $fuzzyMatches = array_slice($fuzzyMatches, 0, 8); // xavfsizlik uchun cheklaymiz
 
+            $buttons = [];
+            foreach ($fuzzyMatches as $employee) {
+                $buttons[] = [[
+                    'text' => "{$employee->first_name} {$employee->last_name} ({$employee->person_id})",
+                    'callback_data' => "regpick_{$employee->id}",
+                ]];
+            }
+
+            Http::post($this->apiUrl . '/sendMessage', [
+                'chat_id' => $chatId,
+                'text'    => "🔎 Bir nechta mos nomzod topildi. Iltimos, o'zingizni tanlang:",
+                'reply_markup' => ['inline_keyboard' => $buttons],
+            ]);
+            return;
+        }
+
+        // 4️⃣ Hech narsa topilmadi
+        $this->sendMessage(
+            $chatId,
+            "❌ Sizning ism-familiyangiz ro'yxatda topilmadi.\n\n"
+            . "Iltimos, to'g'ri yozganingizga ishonch hosil qiling (masalan: Firdavs Raxmatov), "
+            . "yoki HR bergan ID raqamingizni yuboring, yoki HR bilan bog'laning."
+        );
+    }
     /**
      * Kiritilgan raqamni person_id bilan solishtiradi (nol bilan to'ldirilgan yoki oddiy)
      */
@@ -384,6 +425,24 @@ class EGSAttendanceBotController extends Controller
         $chatId = $callback['from']['id'];
         $data = $callback['data'] ?? '';
         $messageId = $callback['message']['message_id'] ?? null;
+
+        // ✅ Ro'yxatdan o'tishda "qaysi biri men" tanlovi
+        if (str_starts_with($data, 'regpick_')) {
+            $employeeId = (int) substr($data, strlen('regpick_'));
+
+            $employee = DB::table('attendance_employees')
+                ->where('id', $employeeId)
+                ->whereNull('chat_id') // hali band qilinmagan bo'lsin
+                ->first();
+
+            if (!$employee) {
+                $this->sendMessage($chatId, "❌ Bu profil allaqachon band qilingan yoki topilmadi. Iltimos, HR bilan bog'laning.");
+                return;
+            }
+
+            $this->completeRegistration($chatId, $employee);
+            return;
+        }
 
         // ============ HR: XODIMLAR BOSHQARUVI ============
 
