@@ -43,7 +43,7 @@ class EGSAttendanceBotController extends Controller
         }
 
         $chatId = $message['chat']['id'] ?? null;
-        $text   = $message['text'] ?? null;
+        $text = $message['text'] ?? null;
 
         if (!$chatId) {
             return response()->json(['ok' => true]);
@@ -97,11 +97,48 @@ class EGSAttendanceBotController extends Controller
             return response()->json(['ok' => true]);
         }
 
+        // 🔵 HR: qidiruv so'rovi kutilmoqda
+        $hrSearchState = cache()->get("hr_search_state_{$chatId}");
+
+        if ($hrSearchState === 'waiting_query' && $text) {
+            $this->handleHrSearchQuery($chatId, $text);
+            return response()->json(['ok' => true]);
+        }
+
+        // 🔵 HR: yangi xodim qo'shish oqimi
+        $hrAddState = cache()->get("hr_add_state_{$chatId}");
+
+        if ($hrAddState && $text) {
+            $this->handleHrAddStep($chatId, $hrAddState, $text);
+            return response()->json(['ok' => true]);
+        }
+
+        // 🔵 HR: tahrirlash oqimi
+        $hrEditState = cache()->get("hr_edit_state_{$chatId}");
+
+        if ($hrEditState && $text) {
+            $this->handleHrEditStep($chatId, $hrEditState, $text);
+            return response()->json(['ok' => true]);
+        }
+
+        // ▶️ HR: /xodimlar menyusi
+        if ($text === '/xodimlar') {
+            $hrIds = array_map('intval', config('services.telegram.egs_hr_ids', []));
+
+            if (!in_array($chatId, $hrIds, true)) {
+                $this->sendMessage($chatId, "⛔️ Ushbu buyruq faqat HR uchun.");
+                return response()->json(['ok' => true]);
+            }
+
+            $this->showHrMenu($chatId);
+            return response()->json(['ok' => true]);
+        }
+
         // ▶️ /start
         if ($text === '/start') {
             $bossId = config('services.telegram.egs_boss_ids', []);
 
-            if(in_array($chatId, $bossId)) {
+            if (in_array($chatId, $bossId)) {
                 $this->sendMessage(
                     $chatId,
                     "👋 Assalomu alaykum!\n\n"
@@ -153,7 +190,7 @@ class EGSAttendanceBotController extends Controller
                 $this->sendMessage(
                     $chatId,
                     "❌ Bunday ID raqamli xodim topilmadi.\n\n"
-                    ."Iltimos, ID raqamingizni tekshirib qayta yuboring, yoki ism-familiyangizni yozing."
+                    . "Iltimos, ID raqamingizni tekshirib qayta yuboring, yoki ism-familiyangizni yozing."
                 );
                 return;
             }
@@ -190,8 +227,8 @@ class EGSAttendanceBotController extends Controller
             $this->sendMessage(
                 $chatId,
                 "❌ Sizning ism-familiyangiz ro'yxatda topilmadi.\n\n"
-                ."Iltimos, to'g'ri yozganingizga ishonch hosil qiling (masalan: Firdavs Raxmatov), "
-                ."yoki HR bergan ID raqamingizni yuboring, yoki HR bilan bog'laning."
+                . "Iltimos, to'g'ri yozganingizga ishonch hosil qiling (masalan: Firdavs Raxmatov), "
+                . "yoki HR bergan ID raqamingizni yuboring, yoki HR bilan bog'laning."
             );
             return;
         }
@@ -236,8 +273,8 @@ class EGSAttendanceBotController extends Controller
         DB::table('attendance_employees')
             ->where('id', $matched->id)
             ->update([
-                'chat_id'    => $chatId,
-                'phone'      => $phone,
+                'chat_id' => $chatId,
+                'phone' => $phone,
                 'updated_at' => now(),
             ]);
 
@@ -246,8 +283,8 @@ class EGSAttendanceBotController extends Controller
 
         // ✅ Klaviaturani (telefon yuborish tugmasini) olib tashlaymiz
         Http::post($this->apiUrl . '/sendMessage', [
-            'chat_id'    => $chatId,
-            'text'       => "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n👤 {$matched->first_name} {$matched->last_name}\n\nEndi kech qolganingizda bot sizga avtomatik xabar yuboradi.",
+            'chat_id' => $chatId,
+            'text' => "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n👤 {$matched->first_name} {$matched->last_name}\n\nEndi kech qolganingizda bot sizga avtomatik xabar yuboradi.",
             'reply_markup' => [
                 'remove_keyboard' => true,
             ],
@@ -323,14 +360,14 @@ class EGSAttendanceBotController extends Controller
     {
         Http::post($this->apiUrl . '/sendMessage', [
             'chat_id' => $chatId,
-            'text'    => $text,
+            'text' => $text,
             'reply_markup' => [
                 'keyboard' => [
                     [
                         ['text' => '📱 Raqamni yuborish', 'request_contact' => true],
                     ],
                 ],
-                'resize_keyboard'   => true,
+                'resize_keyboard' => true,
                 'one_time_keyboard' => true,
             ],
         ]);
@@ -345,7 +382,128 @@ class EGSAttendanceBotController extends Controller
     private function handleCallback(array $callback): void
     {
         $chatId = $callback['from']['id'];
-        $data   = $callback['data'] ?? '';
+        $data = $callback['data'] ?? '';
+        $messageId = $callback['message']['message_id'] ?? null;
+
+        // ============ HR: XODIMLAR BOSHQARUVI ============
+
+        if ($data === 'hr_menu') {
+            cache()->forget("hr_add_state_{$chatId}");
+            cache()->forget("hr_add_data_{$chatId}");
+            cache()->forget("hr_edit_state_{$chatId}");
+            cache()->forget("hr_search_state_{$chatId}");
+
+            Http::post($this->apiUrl . '/editMessageText', [
+                'chat_id'    => $chatId,
+                'message_id' => $messageId,
+                'text'       => "👥 *Xodimlar boshqaruvi*\n\nKerakli amalni tanlang:",
+                'parse_mode' => 'Markdown',
+                'reply_markup' => [
+                    'inline_keyboard' => [
+                        [['text' => '➕ Yangi xodim qo\'shish', 'callback_data' => 'hr_add']],
+                        [['text' => '🔍 Qidirish', 'callback_data' => 'hr_search']],
+                    ],
+                ],
+            ]);
+            return;
+        }
+
+        if (str_starts_with($data, 'hr_') && $this->isHr($chatId)) {
+
+            if ($data === 'hr_add') {
+                $this->startHrAdd($chatId, $messageId);
+                return;
+            }
+
+            if ($data === 'hr_search') {
+                $this->showSearchOptions($chatId, $messageId);
+                return;
+            }
+
+            if ($data === 'hr_search_department') {
+                $this->showDepartmentList($chatId, $messageId);
+                return;
+            }
+
+            if ($data === 'hr_search_params') {
+                cache()->put("hr_search_state_{$chatId}", 'waiting_query', 600);
+                Http::post($this->apiUrl . '/editMessageText', [
+                    'chat_id'    => $chatId,
+                    'message_id' => $messageId,
+                    'text'       => "✍️ Ism, familiya yoki person_id kiriting:",
+                ]);
+                return;
+            }
+
+            if (str_starts_with($data, 'hr_dept_')) {
+                $department = base64_decode(substr($data, strlen('hr_dept_')));
+                $this->showEmployeesByDepartment($chatId, $department);
+                return;
+            }
+
+            if ($data === 'hr_list_all') {
+                $employees = DB::table('attendance_employees')->orderBy('department')->orderBy('first_name')->get();
+                $this->sendEmployeeResults($chatId, $employees, "📋 Barcha xodimlar:");
+                return;
+            }
+
+            if (str_starts_with($data, 'hr_edit_')) {
+                $employeeId = (int) substr($data, strlen('hr_edit_'));
+                $this->showEmployeeCard($chatId, $employeeId, $messageId);
+                return;
+            }
+
+            if (str_starts_with($data, 'hr_editfield_name_')) {
+                $employeeId = (int) substr($data, strlen('hr_editfield_name_'));
+                cache()->put("hr_edit_state_{$chatId}", "name_{$employeeId}", 600);
+                Http::post($this->apiUrl . '/editMessageText', [
+                    'chat_id'    => $chatId,
+                    'message_id' => $messageId,
+                    'text'       => "📝 Yangi ism-familiyani kiriting:",
+                ]);
+                return;
+            }
+
+            if (str_starts_with($data, 'hr_editfield_dept_')) {
+                $employeeId = (int) substr($data, strlen('hr_editfield_dept_'));
+                cache()->put("hr_edit_state_{$chatId}", "dept_{$employeeId}", 600);
+                Http::post($this->apiUrl . '/editMessageText', [
+                    'chat_id'    => $chatId,
+                    'message_id' => $messageId,
+                    'text'       => "🏢 Yangi departamentni kiriting:",
+                ]);
+                return;
+            }
+
+            if (str_starts_with($data, 'hr_reset_chat_')) {
+                $employeeId = (int) substr($data, strlen('hr_reset_chat_'));
+                DB::table('attendance_employees')->where('id', $employeeId)->update([
+                    'chat_id'    => null,
+                    'phone'      => null,
+                    'updated_at' => now(),
+                ]);
+                $this->showEmployeeCard($chatId, $employeeId, $messageId);
+                return;
+            }
+
+            if (str_starts_with($data, 'hr_delete_confirm_')) {
+                $employeeId = (int) substr($data, strlen('hr_delete_confirm_'));
+                DB::table('attendance_employees')->where('id', $employeeId)->delete();
+                Http::post($this->apiUrl . '/editMessageText', [
+                    'chat_id'    => $chatId,
+                    'message_id' => $messageId,
+                    'text'       => "🗑 Xodim o'chirildi.",
+                ]);
+                return;
+            }
+
+            if (str_starts_with($data, 'hr_delete_')) {
+                $employeeId = (int) substr($data, strlen('hr_delete_'));
+                $this->confirmDelete($chatId, $employeeId, $messageId);
+                return;
+            }
+        }
+
 
         // 1️⃣ "Sababini yozish" bosildi — kompaniya tanlashni ko'rsatamiz
         if ($data === 'write_late_reason') {
@@ -384,15 +542,15 @@ class EGSAttendanceBotController extends Controller
             DB::table('attendance_late_events')
                 ->where('id', $lateEvent->id)
                 ->update([
-                    'company'    => $companyKey,
-                    'status'     => 'waiting_reason',
+                    'company' => $companyKey,
+                    'status' => 'waiting_reason',
                     'updated_at' => now(),
                 ]);
 
             Http::post($this->apiUrl . '/editMessageText', [
-                'chat_id'    => $chatId,
+                'chat_id' => $chatId,
                 'message_id' => $callback['message']['message_id'],
-                'text'       => "✅ Kompaniya tanlandi.\n\n✍️ Endi kech qolish sababingizni yozing:",
+                'text' => "✅ Kompaniya tanlandi.\n\n✍️ Endi kech qolish sababingizni yozing:",
             ]);
 
             return;
@@ -419,9 +577,9 @@ class EGSAttendanceBotController extends Controller
         ];
 
         Http::post($this->apiUrl . '/editMessageText', [
-            'chat_id'    => $chatId,
+            'chat_id' => $chatId,
             'message_id' => $messageId,
-            'text'       => "✍️ Iltimos, kompaniyangizni tanlang:",
+            'text' => "✍️ Iltimos, kompaniyangizni tanlang:",
             'reply_markup' => [
                 'inline_keyboard' => $keyboard,
             ],
@@ -436,8 +594,8 @@ class EGSAttendanceBotController extends Controller
         DB::table('attendance_late_events')
             ->where('id', $lateEvent->id)
             ->update([
-                'reason'     => $reasonText,
-                'status'     => 'completed',
+                'reason' => $reasonText,
+                'status' => 'completed',
                 'updated_at' => now(),
             ]);
 
@@ -447,27 +605,27 @@ class EGSAttendanceBotController extends Controller
         $fioShort = $this->formatFioShort($lateEvent->fio);
 
         DB::table('attendances')->insert([
-            'chat_id'      => $chatId,
-            'fio'          => $fioShort,
-            'company'      => $companyData['company'],
-            'day'          => $lateEvent->day,
-            'month'        => $lateEvent->month,
-            'year'         => $lateEvent->year,
-            'reason'       => $reasonText,
+            'chat_id' => $chatId,
+            'fio' => $fioShort,
+            'company' => $companyData['company'],
+            'day' => $lateEvent->day,
+            'month' => $lateEvent->month,
+            'year' => $lateEvent->year,
+            'reason' => $reasonText,
             'late_minutes' => $lateEvent->late_minutes,
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $docPath = $this->generateWord([
-            'company'      => $companyData['company'],
-            'director'     => $companyData['director'],
-            'fio'          => $fioShort,
-            'day'          => sprintf('%02d', $lateEvent->day),
-            'month'        => sprintf('%02d', $lateEvent->month),
-            'year'         => $lateEvent->year,
+            'company' => $companyData['company'],
+            'director' => $companyData['director'],
+            'fio' => $fioShort,
+            'day' => sprintf('%02d', $lateEvent->day),
+            'month' => sprintf('%02d', $lateEvent->month),
+            'year' => $lateEvent->year,
             'late_minutes' => $this->minutesToHoursMinutes($lateEvent->late_minutes),
-            'reason'       => $reasonText,
+            'reason' => $reasonText,
         ]);
 
         Http::attach('document', file_get_contents($docPath), basename($docPath))
@@ -481,7 +639,7 @@ class EGSAttendanceBotController extends Controller
         foreach ($hrIds as $hrId) {
             Http::attach('document', file_get_contents($docPath), basename($docPath))
                 ->post($this->apiUrl . '/sendDocument', [
-                    'chat_id' => (int) $hrId,
+                    'chat_id' => (int)$hrId,
                     'caption' => "📄 {$fioShort} — kech qolish tushuntirish xati.\n💬 Sabab: {$reasonText}",
                 ]);
         }
@@ -497,7 +655,7 @@ class EGSAttendanceBotController extends Controller
     private function mapDepartmentToCompany(?string $department): string
     {
         $map = [
-            'EGS'    => 'egs',
+            'EGS' => 'egs',
             'Sebzor' => 'egs',       // kerak bo'lsa moslang
             'Navoiy' => 'egs',       // kerak bo'lsa moslang
         ];
@@ -511,27 +669,27 @@ class EGSAttendanceBotController extends Controller
     {
         return match ($company) {
             'izisol' => [
-                'company'  => 'IZISOL',
+                'company' => 'IZISOL',
                 'director' => 'Шукуров Р.Н.',
             ],
             'eastline' => [
-                'company'  => 'EASTLINE EXPRESS',
+                'company' => 'EASTLINE EXPRESS',
                 'director' => 'Сафаров У.А.',
             ],
             'incotruck' => [
-                'company'  => 'INCOTRUCK',
+                'company' => 'INCOTRUCK',
                 'director' => 'Тухтаев Н.К.',
             ],
             'transceka' => [
-                'company'  => 'TRANSCEKA LOGISTIC SERVICES',
+                'company' => 'TRANSCEKA LOGISTIC SERVICES',
                 'director' => 'Абдуюсупов Б.С.',
             ],
             'egs' => [
-                'company'  => 'EGS group',
+                'company' => 'EGS group',
                 'director' => 'Шукуров Р.Н.',
             ],
             default => [
-                'company'  => 'Noma\'lum',
+                'company' => 'Noma\'lum',
                 'director' => '—',
             ],
         };
@@ -542,7 +700,7 @@ class EGSAttendanceBotController extends Controller
         $parts = preg_split('/\s+/', trim($fio));
 
         $firstName = ucfirst(mb_strtolower($parts[0] ?? '', 'UTF-8'));
-        $lastName  = mb_strtolower($parts[1] ?? '', 'UTF-8');
+        $lastName = mb_strtolower($parts[1] ?? '', 'UTF-8');
 
         if (!$lastName) {
             return $firstName;
@@ -586,7 +744,7 @@ class EGSAttendanceBotController extends Controller
 
     private function minutesToHoursMinutes(int $totalMinutes): string
     {
-        $hours   = intdiv($totalMinutes, 60);
+        $hours = intdiv($totalMinutes, 60);
         $minutes = $totalMinutes % 60;
 
         if ($hours > 0) {
@@ -595,12 +753,347 @@ class EGSAttendanceBotController extends Controller
 
         return "{$minutes} daqiqa";
     }
+
     private function sendMessage(int $chatId, string $text): void
     {
         Http::post($this->apiUrl . '/sendMessage', [
+            'chat_id' => $chatId,
+            'text' => $text,
+            'parse_mode' => 'Markdown',
+        ]);
+    }
+
+    /**
+     * =========================
+     * HR: XODIMLAR CRUD BLOKI
+     * =========================
+     */
+
+    private function isHr(int $chatId): bool
+    {
+        $hrIds = array_map('intval', config('services.telegram.egs_hr_ids', []));
+        return in_array($chatId, $hrIds, true);
+    }
+
+    private function showHrMenu(int $chatId): void
+    {
+        Http::post($this->apiUrl . '/sendMessage', [
+            'chat_id' => $chatId,
+            'text'    => "👥 *Xodimlar boshqaruvi*\n\nKerakli amalni tanlang:",
+            'parse_mode' => 'Markdown',
+            'reply_markup' => [
+                'inline_keyboard' => [
+                    [['text' => '➕ Yangi xodim qo\'shish', 'callback_data' => 'hr_add']],
+                    [['text' => '🔍 Qidirish', 'callback_data' => 'hr_search']],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * --- QIDIRISH ---
+     */
+
+    private function showSearchOptions(int $chatId, ?int $messageId = null): void
+    {
+        $payload = [
+            'chat_id' => $chatId,
+            'text'    => "🔍 Qidiruv turini tanlang:",
+            'reply_markup' => [
+                'inline_keyboard' => [
+                    [['text' => '🏢 Departament bo\'yicha', 'callback_data' => 'hr_search_department']],
+                    [['text' => '👤 Ism/Familiya/ID bo\'yicha', 'callback_data' => 'hr_search_params']],
+                    [['text' => '◀️ Ortga', 'callback_data' => 'hr_menu']],
+                ],
+            ],
+        ];
+
+        if ($messageId) {
+            $payload['message_id'] = $messageId;
+            Http::post($this->apiUrl . '/editMessageText', $payload);
+        } else {
+            Http::post($this->apiUrl . '/sendMessage', $payload);
+        }
+    }
+
+    private function showDepartmentList(int $chatId, int $messageId): void
+    {
+        $departments = DB::table('attendance_employees')
+            ->whereNotNull('department')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
+
+        if ($departments->isEmpty()) {
+            $this->sendMessage($chatId, "❌ Departamentlar topilmadi.");
+            return;
+        }
+
+        $buttons = [];
+        foreach ($departments as $dept) {
+            $buttons[] = [[
+                'text' => $dept,
+                'callback_data' => 'hr_dept_' . base64_encode($dept),
+            ]];
+        }
+
+        $buttons[] = [['text' => '◀️ Ortga', 'callback_data' => 'hr_search']];
+
+        Http::post($this->apiUrl . '/editMessageText', [
+            'chat_id'    => $chatId,
+            'message_id' => $messageId,
+            'text'       => "🏢 Departamentni tanlang:",
+            'reply_markup' => ['inline_keyboard' => $buttons],
+        ]);
+    }
+
+    private function showEmployeesByDepartment(int $chatId, string $department): void
+    {
+        $employees = DB::table('attendance_employees')
+            ->where('department', $department)
+            ->orderBy('first_name')
+            ->get();
+
+        $this->sendEmployeeResults($chatId, $employees, "🏢 *{$department}* bo'limi xodimlari:");
+    }
+
+    private function handleHrSearchQuery(int $chatId, string $query): void
+    {
+        cache()->forget("hr_search_state_{$chatId}");
+
+        $query = trim($query);
+
+        $employees = DB::table('attendance_employees')
+            ->where('first_name', 'LIKE', "%{$query}%")
+            ->orWhere('last_name', 'LIKE', "%{$query}%")
+            ->orWhere('person_id', 'LIKE', "%{$query}%")
+            ->orderBy('first_name')
+            ->limit(20)
+            ->get();
+
+        $this->sendEmployeeResults($chatId, $employees, "🔍 \"{$query}\" bo'yicha natijalar:");
+    }
+
+    private function sendEmployeeResults(int $chatId, $employees, string $title): void
+    {
+        if ($employees->isEmpty()) {
+            $this->sendMessage($chatId, "❌ Hech qanday xodim topilmadi.");
+            return;
+        }
+
+        $text = $title . "\n\n";
+
+        foreach ($employees as $index => $employee) {
+            $status = $employee->chat_id ? '✅' : '⚪️';
+            $text .= ($index + 1) . ". {$status} {$employee->first_name} {$employee->last_name}\n"
+                . "   🆔 {$employee->person_id} | 🏢 {$employee->department}\n";
+        }
+
+        $text .= "\n✅ — botda ro'yxatdan o'tgan, ⚪️ — o'tmagan";
+
+        $buttons = [];
+        foreach ($employees->take(8) as $employee) {
+            $buttons[] = [[
+                'text' => "✏️ {$employee->first_name} {$employee->last_name}",
+                'callback_data' => 'hr_edit_' . $employee->id,
+            ]];
+        }
+
+        $buttons[] = [['text' => '◀️ Ortga', 'callback_data' => 'hr_search']];
+
+        Http::post($this->apiUrl . '/sendMessage', [
+            'chat_id'    => $chatId,
+            'text'       => $text,
+            'reply_markup' => ['inline_keyboard' => $buttons],
+        ]);
+    }
+
+    /**
+     * --- QO'SHISH ---
+     */
+
+    private function startHrAdd(int $chatId, int $messageId): void
+    {
+        cache()->put("hr_add_state_{$chatId}", 'waiting_person_id', 600);
+        cache()->put("hr_add_data_{$chatId}", [], 600);
+
+        Http::post($this->apiUrl . '/editMessageText', [
+            'chat_id'    => $chatId,
+            'message_id' => $messageId,
+            'text'       => "🆔 Yangi xodimning HikCentral person_id raqamini kiriting:\n\nMasalan: 0000000131",
+            'reply_markup' => [
+                'inline_keyboard' => [
+                    [['text' => '◀️ Ortga', 'callback_data' => 'hr_menu']],
+                ],
+            ],
+        ]);
+    }
+
+    private function handleHrAddStep(int $chatId, string $state, string $text): void
+    {
+        $text = trim($text);
+        $data = cache()->get("hr_add_data_{$chatId}", []);
+
+        if ($state === 'waiting_person_id') {
+
+            $exists = DB::table('attendance_employees')->where('person_id', $text)->exists();
+
+            if ($exists) {
+                $this->sendMessage($chatId, "❌ Bu person_id allaqachon mavjud. Boshqa ID kiriting:");
+                return;
+            }
+
+            $data['person_id'] = $text;
+            cache()->put("hr_add_data_{$chatId}", $data, 600);
+            cache()->put("hr_add_state_{$chatId}", 'waiting_name', 600);
+
+            $this->sendMessage($chatId, "📝 Endi ism-familiyasini kiriting:\n\nMasalan: Firdavs Raxmatov");
+            return;
+        }
+
+        if ($state === 'waiting_name') {
+
+            $parts = preg_split('/\s+/', $text, 2);
+            $data['first_name'] = $parts[0] ?? $text;
+            $data['last_name']  = $parts[1] ?? '';
+
+            cache()->put("hr_add_data_{$chatId}", $data, 600);
+            cache()->put("hr_add_state_{$chatId}", 'waiting_department', 600);
+
+            $this->sendMessage($chatId, "🏢 Endi departamentini kiriting:\n\nMasalan: EGS");
+            return;
+        }
+
+        if ($state === 'waiting_department') {
+
+            $data['department'] = $text;
+
+            DB::table('attendance_employees')->insert([
+                'person_id'  => $data['person_id'],
+                'first_name' => $data['first_name'],
+                'last_name'  => $data['last_name'],
+                'department' => $data['department'],
+                'chat_id'    => null,
+                'phone'      => null,
+                'is_active'  => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            cache()->forget("hr_add_state_{$chatId}");
+            cache()->forget("hr_add_data_{$chatId}");
+
+            $this->sendMessage(
+                $chatId,
+                "✅ Yangi xodim qo'shildi!\n\n"
+                ."🆔 {$data['person_id']}\n"
+                ."👤 {$data['first_name']} {$data['last_name']}\n"
+                ."🏢 {$data['department']}"
+            );
+            return;
+        }
+    }
+
+    /**
+     * --- TAHRIRLASH / O'CHIRISH ---
+     */
+
+    private function showEmployeeCard(int $chatId, int $employeeId, ?int $messageId = null): void
+    {
+        $employee = DB::table('attendance_employees')->where('id', $employeeId)->first();
+
+        if (!$employee) {
+            $this->sendMessage($chatId, "❌ Xodim topilmadi.");
+            return;
+        }
+
+        $status = $employee->chat_id ? "✅ Ro'yxatdan o'tgan" : "⚪️ Ro'yxatdan o'tmagan";
+
+        $text = "👤 *{$employee->first_name} {$employee->last_name}*\n\n"
+            ."🆔 Person ID: {$employee->person_id}\n"
+            ."🏢 Departament: {$employee->department}\n"
+            ."📱 Telefon: " . ($employee->phone ?? '—') . "\n"
+            ."📌 Holat: {$status}";
+
+        $payload = [
             'chat_id'    => $chatId,
             'text'       => $text,
             'parse_mode' => 'Markdown',
+            'reply_markup' => [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '✏️ Ism-familiya', 'callback_data' => "hr_editfield_name_{$employee->id}"],
+                        ['text' => '🏢 Departament', 'callback_data' => "hr_editfield_dept_{$employee->id}"],
+                    ],
+                    [
+                        ['text' => '🔄 Chat_id tozalash', 'callback_data' => "hr_reset_chat_{$employee->id}"],
+                    ],
+                    [
+                        ['text' => '🗑 O\'chirish', 'callback_data' => "hr_delete_{$employee->id}"],
+                    ],
+                    [
+                        ['text' => '◀️ Ortga', 'callback_data' => 'hr_menu'],
+                    ],
+                ],
+            ],
+        ];
+
+        if ($messageId) {
+            $payload['message_id'] = $messageId;
+            Http::post($this->apiUrl . '/editMessageText', $payload);
+        } else {
+            Http::post($this->apiUrl . '/sendMessage', $payload);
+        }
+    }
+
+    private function handleHrEditStep(int $chatId, string $state, string $text): void
+    {
+        // state format: "name_<id>" yoki "dept_<id>"
+        [$field, $employeeId] = explode('_', $state, 2);
+        $text = trim($text);
+
+        if ($field === 'name') {
+            $parts = preg_split('/\s+/', $text, 2);
+
+            DB::table('attendance_employees')->where('id', $employeeId)->update([
+                'first_name' => $parts[0] ?? $text,
+                'last_name'  => $parts[1] ?? '',
+                'updated_at' => now(),
+            ]);
+        } elseif ($field === 'dept') {
+            DB::table('attendance_employees')->where('id', $employeeId)->update([
+                'department' => $text,
+                'updated_at' => now(),
+            ]);
+        }
+
+        cache()->forget("hr_edit_state_{$chatId}");
+
+        $this->sendMessage($chatId, "✅ Yangilandi!");
+        $this->showEmployeeCard($chatId, (int) $employeeId);
+    }
+
+    private function confirmDelete(int $chatId, int $employeeId, int $messageId): void
+    {
+        $employee = DB::table('attendance_employees')->where('id', $employeeId)->first();
+
+        if (!$employee) {
+            $this->sendMessage($chatId, "❌ Xodim topilmadi.");
+            return;
+        }
+
+        Http::post($this->apiUrl . '/editMessageText', [
+            'chat_id'    => $chatId,
+            'message_id' => $messageId,
+            'text'       => "⚠️ {$employee->first_name} {$employee->last_name}ni rostdan o'chirmoqchimisiz?",
+            'reply_markup' => [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '✅ Ha, o\'chirish', 'callback_data' => "hr_delete_confirm_{$employeeId}"],
+                        ['text' => '❌ Bekor qilish', 'callback_data' => "hr_edit_{$employeeId}"],
+                    ],
+                ],
+            ],
         ]);
     }
 }
