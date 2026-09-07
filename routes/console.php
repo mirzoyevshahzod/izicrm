@@ -11,3 +11,8 @@ Schedule::command('attendance:sync')
     ->everyMinute()
     ->withoutOverlapping(5)   // oldingi ishga tushish 5 daqiqadan ko'p davom etsa, lock avtomatik yechiladi
     ->runInBackground();
+
+    
+Schedule::command('attendance:detect-early-leave')
+    ->dailyAt('19:00')
+    ->withoutOverlapping();

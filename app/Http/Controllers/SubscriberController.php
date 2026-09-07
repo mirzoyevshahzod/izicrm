@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Models\Subscriber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class SubscriberController extends Controller
 {
@@ -37,6 +38,7 @@ class SubscriberController extends Controller
 
     // 🟢 2) START — faqat private chatda ishlasin (guruhda emas)
     if ($text == "/start" && $chatType == 'private') {
+        Log::info("New subscriber: " . $chatId);
         Subscriber::firstOrCreate(['chat_id' => $chatId]);
         $this->sendText($chatId, "Botga xush kelibsiz! Bazalarni sizga yuboraman.");
         return response('ok');
