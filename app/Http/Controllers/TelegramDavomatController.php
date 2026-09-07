@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\TelegramDavomat\ProcessTelegramUpdate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -36,10 +35,24 @@ class TelegramDavomatController extends Controller
      */
     public function webhook(Request $request)
     {
+        $start = microtime(true);
+        Log::info('Webhook start');
         $update = $request->all();
 
-        // Darhol javob qaytaramiz — Telegram kutmaydi
-        ProcessTelegramUpdate::dispatch($update);
+        if (isset($update['message'])) {
+            $this->handleMessage($update['message']);
+        }
+
+
+        if (isset($update['callback_query'])) {
+            $this->handleCallback($update['callback_query']);
+            return;
+        }
+
+        Log::info('Webhook end', [
+            'time' => microtime(true) - $start
+        ]);
+
 
         return response()->json(['ok' => true]);
     }
@@ -48,7 +61,7 @@ class TelegramDavomatController extends Controller
     /**
      * Message handler
      */
-    public function handleMessage(array $message): void
+    private function handleMessage(array $message): void
     {
         $chatId    = $message['chat']['id'];
         $firstName = $message['chat']['first_name'] ?? '';
@@ -301,7 +314,7 @@ class TelegramDavomatController extends Controller
     }
 
 
-    public function handleCallback(array $callback): void
+    private function handleCallback(array $callback): void
     {
         $chatId = $callback['from']['id'];
         $data   = $callback['data'];
