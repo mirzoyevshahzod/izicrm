@@ -6,6 +6,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtViewController;
+use App\Http\Controllers\TelegramCandidateBotController;
 use App\Http\Controllers\TelegramMyfinEgsBotController;
 use App\Http\Controllers\TelegramMyfinExpressBotController;
 use Illuminate\Http\Request;
@@ -37,6 +38,10 @@ Route::post('/tariff-webhook', [TariffTelegramController::class, 'webhook']);
 Route::post('/telegram/egs-attendance-webhook', [EGSAttendanceBotController::class, 'webhook']);
 Route::post('/telegram/myfin-egs-webhook', [TelegramMyfinEgsBotController::class, 'webhook']);
 Route::post('/telegram/myfin-express-webhook', [TelegramMyfinExpressBotController::class, 'webhook']);
+
+Route::post('/candidate/telegram/webhook', [TelegramCandidateBotController::class, 'candidate']);
+Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class, 'express']);
+
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
