@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtViewController;
 use App\Http\Controllers\TelegramMyfinEgsBotController;
+use App\Http\Controllers\TelegramMyfinExpressBotController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TelegramContactBotController;
@@ -35,6 +36,7 @@ Route::post('/kgs-request-send', [RequestBotContoller::class, 'KGSsend']);
 Route::post('/tariff-webhook', [TariffTelegramController::class, 'webhook']);
 Route::post('/telegram/egs-attendance-webhook', [EGSAttendanceBotController::class, 'webhook']);
 Route::post('/telegram/myfin-egs-webhook', [TelegramMyfinEgsBotController::class, 'webhook']);
+Route::post('/telegram/myfin-express-webhook', [TelegramMyfinExpressBotController::class, 'webhook']);
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
