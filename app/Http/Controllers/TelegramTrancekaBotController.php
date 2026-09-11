@@ -4,11 +4,18 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Telegram\Bot\Laravel\Facades\Telegram;
+use Telegram\Bot\Api;
 use App\Models\UserStep;
 
 class TelegramTrancekaBotController extends Controller
 {
+    protected Api $telegram;
+
+    public function __construct()
+    {
+        $this->telegram = new Api(env('TELEGRAM_TRANCEKA_BOT_TOKEN'));
+    }
+
     private function validateEnvironmentVariables()
     {
         $requiredVars = [
@@ -90,7 +97,7 @@ class TelegramTrancekaBotController extends Controller
                 'payload' => $request->all()
             ]);
 
-            $update = Telegram::getWebhookUpdate();
+            $update = $this->telegram->getWebhookUpdate();
 
             // Handle my_chat_member updates
             if (isset($update['my_chat_member'])) {
@@ -340,7 +347,7 @@ class TelegramTrancekaBotController extends Controller
             // Answer callback query first
             if ($callbackId) {
                 try {
-                    Telegram::answerCallbackQuery([
+                    $this->telegram->answerCallbackQuery([
                         'callback_query_id' => $callbackId
                     ]);
                 } catch (\Exception $e) {
@@ -977,7 +984,7 @@ class TelegramTrancekaBotController extends Controller
                 'parse_mode' => 'HTML'
             ], $extra);
 
-            return Telegram::sendMessage($messageData);
+            return $this->telegram->sendMessage($messageData);
         } catch (\Exception $e) {
             Log::error('Error sending message', [
                 'message' => $e->getMessage(),
