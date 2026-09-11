@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtViewController;
 use App\Http\Controllers\TelegramCandidateBotController;
+use App\Http\Controllers\TelegramExpressBotController;
 use App\Http\Controllers\TelegramMyfinEgsBotController;
 use App\Http\Controllers\TelegramMyfinExpressBotController;
 use App\Http\Controllers\TelegramTrancekaBotController;
@@ -27,6 +28,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/telegram/tranceka-webhook', [TelegramTrancekaBotController::class, 'webhook']);
+Route::post('/telegram/express-webhook', [TelegramExpressBotController::class, 'handle']);
 Route::post('/telegram/webhook', [TelegramContactBotController::class, 'webhook']);
 Route::post('/telegram-webhook', [SubscriberController::class, 'webhook']);
 Route::post('/telegram/davomat-webhook', [TelegramDavomatController::class, 'webhook']);
