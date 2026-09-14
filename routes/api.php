@@ -8,6 +8,7 @@ use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtViewController;
 use App\Http\Controllers\TelegramCandidateBotController;
 use App\Http\Controllers\TelegramExpressBotController;
+use App\Http\Controllers\TelegramMobileAppBotController;
 use App\Http\Controllers\TelegramMyfinEgsBotController;
 use App\Http\Controllers\TelegramMyfinExpressBotController;
 use App\Http\Controllers\TelegramTrancekaBotController;
@@ -42,7 +43,7 @@ Route::post('/tariff-webhook', [TariffTelegramController::class, 'webhook']);
 Route::post('/telegram/egs-attendance-webhook', [EGSAttendanceBotController::class, 'webhook']);
 Route::post('/telegram/myfin-egs-webhook', [TelegramMyfinEgsBotController::class, 'webhook']);
 Route::post('/telegram/myfin-express-webhook', [TelegramMyfinExpressBotController::class, 'webhook']);
-
+Route::post('/telegram/mobile-app-webhook', [TelegramMobileAppBotController::class, 'mobileApp']);
 Route::post('/candidate/telegram/webhook', [TelegramCandidateBotController::class, 'candidate']);
 Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class, 'express']);
 
