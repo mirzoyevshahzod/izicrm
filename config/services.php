@@ -48,6 +48,7 @@ return [
         'egs_attendance_bot_token' => env('TELEGRAM_EGS_ATTENDANCE_BOT_TOKEN'),
         'egs_hr_ids' => array_filter(explode(',', env('EGS_HR_IDS', ''))),
         'egs_boss_ids' => array_filter(explode(',', env('EGS_BOSS_IDS', ''))),
+        'mobile_webhook_url' => env('MOBILE_WEBHOOK_URL'),
     ],
 
 ];

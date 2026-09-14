@@ -10,10 +10,17 @@ class TelegramMobileAppBotController extends Controller
 {
     public function mobileApp(Request $request)
     {
-        return $this->forward(
-            $request,
-            env('MOBILE_WEBHOOK_URL')
-        );
+        $url = config('services.telegram.mobile_webhook_url');
+
+        if (!$url) {
+            Log::error('MOBILE_WEBHOOK_URL is not configured');
+
+            return response()->json([
+                'ok' => false,
+            ], 500);
+        }
+
+        return $this->forward($request, $url);
     }
 
     private function forward(Request $request, string $url)
