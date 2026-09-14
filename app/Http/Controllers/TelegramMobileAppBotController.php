@@ -12,7 +12,7 @@ class TelegramMobileAppBotController extends Controller
     {
         return $this->forward(
             $request,
-            env('MOBILE_APP_WEBHOOK_URL')
+            env('MOBILE_WEBHOOK_URL')
         );
     }
 
