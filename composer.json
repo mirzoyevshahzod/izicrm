@@ -7,6 +7,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "danog/madelineproto": "^8.7",
+        "darkaonline/l5-swagger": "^11.1",
         "intervention/image": "^3.11",
         "irazasyed/telegram-bot-sdk": "^3.15",
         "laravel/framework": "^12.0",

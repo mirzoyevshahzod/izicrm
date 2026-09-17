@@ -1,0 +1,380 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "IziCRM API",
+        "description": "API documentation for IziCRM",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/queries": {
+            "get": {
+                "tags": [
+                    "Queries"
+                ],
+                "summary": "Get all finished queries",
+                "operationId": "f541c46bb1d6da9430b73fb2d3b41d8c",
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "custom_id": {
+                                                        "type": "string",
+                                                        "example": "abc123"
+                                                    },
+                                                    "count": {
+                                                        "type": "integer",
+                                                        "example": 10
+                                                    },
+                                                    "telegram_group_count": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No data found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No data found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/query/check": {
+            "post": {
+                "tags": [
+                    "Queries"
+                ],
+                "summary": "Check Telegram by custom_id",
+                "description": "Search Telegram messages globally using custom_id and return count",
+                "operationId": "checkTelegram",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "custom_id"
+                                ],
+                                "properties": {
+                                    "custom_id": {
+                                        "type": "string",
+                                        "example": "ABC123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "custom_id": {
+                                            "type": "string",
+                                            "example": "ABC123"
+                                        },
+                                        "count": {
+                                            "type": "integer",
+                                            "example": 25
+                                        },
+                                        "crm_status": {
+                                            "type": "integer",
+                                            "example": 200
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            }
+        },
+        "/api/query/{customId}/cancelled": {
+            "get": {
+                "tags": [
+                    "Queries"
+                ],
+                "summary": "Get single query by custom_id",
+                "operationId": "c8a72c54b728f83fc3228be44c4f26f6",
+                "parameters": [
+                    {
+                        "name": "customId",
+                        "in": "path",
+                        "description": "Custom ID of query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "EGS00002"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data fetched"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "custom_id": {
+                                                    "type": "string",
+                                                    "example": "abc123"
+                                                },
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "telegram_group_count": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Data not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/query/{customId}": {
+            "get": {
+                "tags": [
+                    "Queries"
+                ],
+                "summary": "Get single query by custom_id",
+                "operationId": "96e3e95abb3629fe1a62eae0a0cae3fd",
+                "parameters": [
+                    {
+                        "name": "customId",
+                        "in": "path",
+                        "description": "Custom ID of query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "EGS00002"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data fetched"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "custom_id": {
+                                                    "type": "string",
+                                                    "example": "abc123"
+                                                },
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "telegram_group_count": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Data not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/query/result/{custom_id}": {
+            "get": {
+                "tags": [
+                    "Queries"
+                ],
+                "summary": "Get Telegram check result",
+                "description": "Returns Telegram search result by custom_id. If the process is not finished yet, status will be 'processing'.",
+                "operationId": "getTelegramQueryResult",
+                "parameters": [
+                    {
+                        "name": "custom_id",
+                        "in": "path",
+                        "description": "Unique identifier used for Telegram search",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "ABC123"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "custom_id": {
+                                            "type": "string",
+                                            "example": "ABC123"
+                                        },
+                                        "count": {
+                                            "type": "integer",
+                                            "example": 25
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "done",
+                                            "enum": [
+                                                "processing",
+                                                "done"
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Query not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Queries",
+            "description": "Query API endpoints"
+        }
+    ]
+}
