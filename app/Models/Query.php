@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Query extends Model
 {
-    protected $table = 'queries';
+    protected $table = 'search_queries';
 
     protected $fillable = [
         'custom_id',
