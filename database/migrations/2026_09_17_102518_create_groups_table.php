@@ -16,7 +16,6 @@ return new class extends Migration
             $table->bigInteger('telegram_id')->unique();
             $table->string('title');
             $table->string('link')->nullable()->unique();
-            $table->string('telegram_id')->nullable();
             $table->string('status')->default('active');
             $table->timestamps();
         });
