@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class Query extends Model
 {
-    protected $table = 'queries'; // aniq qilib qo'ydik
+    protected $table = 'external_query_ids';
     protected $fillable = [
         'query_id',
         'type',

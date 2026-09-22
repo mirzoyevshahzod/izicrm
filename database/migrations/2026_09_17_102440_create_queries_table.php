@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('search_queries', function (Blueprint $table) {
+        Schema::create('queries', function (Blueprint $table) {
             $table->id();
             $table->string('custom_id')->unique();
+            $table->enum('check_status', ['pending', 'in_progress', 'completed'])->default('completed');
             $table->string('status');
             $table->timestamp('query_created_at');
             $table->integer('count');
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('search_queries');
+        Schema::dropIfExists('queries');
     }
 };

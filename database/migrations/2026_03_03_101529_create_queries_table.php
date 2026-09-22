@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('queries', function (Blueprint $table) {
+        Schema::create('external_query_ids', function (Blueprint $table) {
             $table->id();
             $table->string('query_id');
             $table->string('type')->default('gorit');
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('queries');
+        Schema::dropIfExists('external_query_ids');
     }
 };

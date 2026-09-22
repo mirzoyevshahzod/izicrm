@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Query extends Model
 {
-    protected $table = 'search_queries';
+    protected $table = 'queries';
 
     protected $fillable = [
         'custom_id',
@@ -14,7 +14,8 @@ class Query extends Model
         'query_created_at',
         'count',
         'is_synced',
-        'is_finished'
+        'is_finished',
+        'check_status',
     ];
 
     const STATUS_ATMEN = 17;

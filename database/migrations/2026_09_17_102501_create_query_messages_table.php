@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('query_messages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('query_id')->constrained('search_queries')->cascadeOnDelete();
+            $table->foreignId('query_id')->constrained('queries')->cascadeOnDelete();
             $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
             $table->bigInteger('message_id')->unsigned();
             $table->timestamps();
