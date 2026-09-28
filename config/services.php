@@ -49,6 +49,7 @@ return [
         'egs_hr_ids' => array_filter(explode(',', env('EGS_HR_IDS', ''))),
         'egs_boss_ids' => array_filter(explode(',', env('EGS_BOSS_IDS', ''))),
         'mobile_webhook_url' => env('MOBILE_WEBHOOK_URL'),
+        'postix_webhook_url' => env('TELEGRAM_POSTIX_WEBHOOK_URL'),
     ],
 
 ];
