@@ -43,10 +43,10 @@ Route::post('/tariff-webhook', [TariffTelegramController::class, 'webhook']);
 Route::post('/telegram/egs-attendance-webhook', [EGSAttendanceBotController::class, 'webhook']);
 Route::post('/telegram/myfin-egs-webhook', [TelegramMyfinEgsBotController::class, 'webhook']);
 Route::post('/telegram/myfin-express-webhook', [TelegramMyfinExpressBotController::class, 'webhook']);
-Route::post('/telegram/mobile-app-webhook', [TelegramPostixBotController::class, 'mobileApp']);
+Route::post('/telegram/postix-webhook', [TelegramPostixBotController::class, 'postixWebhook']);
 Route::post('/candidate/telegram/webhook', [TelegramCandidateBotController::class, 'candidate']);
 Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class, 'express']);
-Route::post('/telegram/postix-webhook', [TelegramPostixBotController::class, 'postixWebhook']);
+
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
