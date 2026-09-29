@@ -19,10 +19,6 @@ return [
             'token' => env('TELEGRAM_TRANCEKA_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram/tranceka-webhook',
         ],
-        'EGS_transportniy_bot' => [
-            'token' => env('TELEGRAM_CONTACT_AS_BOT_TOKEN'),
-            'url'   => 'https://webhook.izicrm.uz/api/telegram/webhook',
-        ],
         'E_Ombor_Bot' => [
             'token' => env('TELEGRAM_BOT_TOKEN1'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram-webhook',
