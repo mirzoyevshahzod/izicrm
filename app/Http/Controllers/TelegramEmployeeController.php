@@ -42,6 +42,8 @@ class TelegramEmployeeController extends Controller
 
     public function webhook(Request $request)
     {
+
+        Log::info('TelegramEmployeeController webhook called', ['request' => $request->all()]);
         $update = $request->all();
 
         if (isset($update['message'])) {

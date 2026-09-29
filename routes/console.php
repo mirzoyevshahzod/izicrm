@@ -23,7 +23,7 @@ Schedule::command('queries:sync')
 
 // Har soatda bir marta (har soatning 28-daqiqasida)
 Schedule::command('telegram:check-all')
-    ->hourlyAt(16) // SCHEDULE_START_MINUTE qiymati
+    ->hourlyAt(51) // SCHEDULE_START_MINUTE qiymati
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/telegram-check-' . now()->format('Y-m-d') . '.log'));

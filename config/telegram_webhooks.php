@@ -20,8 +20,8 @@ return [
             'url'   => 'https://webhook.izicrm.uz/api/telegram/tranceka-webhook',
         ],
         'EGS_transportniy_bot' => [
-            'token' => env('TELEGRAM_BOT_TOKEN'),
-            'url'   => 'https://izicrm.uz/api/telegram/webhook',
+            'token' => env('TELEGRAM_CONTACT_AS_BOT_TOKEN'),
+            'url'   => 'https://webhook.izicrm.uz/api/telegram/webhook',
         ],
         'E_Ombor_Bot' => [
             'token' => env('TELEGRAM_BOT_TOKEN1'),
@@ -33,7 +33,7 @@ return [
         ],
         'egs_zadolzhennost_bot' => [
             'token' => env('TELEGRAM_BOT_TOKEN3'),
-            'url'   => 'https://izicrm.uz/api/telegram/debt-webhook',
+            'url'   => 'https://webhook.izicrm.uz/api/telegram/debt-webhook',
         ],
         'EGS_phone_number_bot' => [
             'token' => env('TELEGRAM_CONTACT_BOT_TOKEN'),
@@ -50,10 +50,6 @@ return [
         'contact_asst_bot' => [
             'token' => env('TELEGRAM_CONTACT_AS_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram/webhook',
-        ],
-        'EGS_navbat_bot' => [
-            'token' => env('TELEGRAM_BOT_TOKEN4'),
-            'url'   => 'https://line.izisol.uz/api/identify-bot/telegram/webhook',
         ],
         'egs_attendance_bot' => [
             'token' => env('TELEGRAM_EGS_ATTENDANCE_BOT_TOKEN'),

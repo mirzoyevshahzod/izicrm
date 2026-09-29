@@ -20,8 +20,8 @@ class CheckAllQueries extends Command
         $settings = new Settings;
 
         $settings->getAppInfo()
-            ->setApiId((int) env('TG_API_ID'))
-            ->setApiHash(env('TG_API_HASH'));
+            ->setApiId((int) '24613586')
+            ->setApiHash('30e63ed7236511cb1b3620ce0f2a5d33');
 
         $MadelineProto = new API(
             storage_path('app/session.madeline'),

@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class TelegramMyfinEgsBotController extends Controller
 {
     protected $telegram;
-    private $allowedUserChatIds = [6757738816, 6051881564, 887162370, 7949626123]; // Ruxsat berilgan foydalanuvchi chat ID
+    private $allowedUserChatIds = [6757738816, 6051881564, 887162370, 7949626123,7510409703]; // Ruxsat berilgan foydalanuvchi chat ID
     private $targetGroupChatId = -1002896030035; // Xabar yuboriladigan guruh chat ID
 
     public function __construct()

@@ -18,44 +18,44 @@ class SubscriberController extends Controller
     }
 
     public function webhook(Request $request)
-{
-    $update = $request->all();
+    {
+        $update = $request->all();
 
-    // 🟢 1) message yoki channel_post qabul qilish
-    $msg = $update['message'] ?? $update['channel_post'] ?? null;
+        // 🟢 1) message yoki channel_post qabul qilish
+        $msg = $update['message'] ?? $update['channel_post'] ?? null;
 
-    if (!$msg) {
+        if (!$msg) {
+            return response('ok');
+        }
+
+        $chatId = $msg['chat']['id'] ?? null;
+        $text = $msg['text'] ?? null;
+        $chatType = $msg['chat']['type'] ?? null;
+
+        if (!$chatId) {
+            return response('ok');
+        }
+
+        // 🟢 2) START — faqat private chatda ishlasin (guruhda emas)
+        if ($text == "/start" && $chatType == 'private') {
+            Log::info("New subscriber: " . $chatId);
+            Subscriber::firstOrCreate(['chat_id' => $chatId]);
+            $this->sendText($chatId, "Botga xush kelibsiz! Bazalarni sizga yuboraman.");
+            return response('ok');
+        }
+
+        // 🟢 3) Matn bo‘lsa guruhdan yubormaymiz (faqat private matn qabul qilinadi)
+        if ($chatType != 'private' && !$this->isFileMessage($msg)) {
+            return response('ok');
+        }
+
+        // 🟢 4) Faqat fayllar broadcast qilinadi
+        if ($this->isFileMessage($msg)) {
+            $this->broadcastFile($msg);
+        }
+
         return response('ok');
     }
-
-    $chatId = $msg['chat']['id'] ?? null;
-    $text   = $msg['text'] ?? null;
-    $chatType = $msg['chat']['type'] ?? null;
-
-    if (!$chatId) {
-        return response('ok');
-    }
-
-    // 🟢 2) START — faqat private chatda ishlasin (guruhda emas)
-    if ($text == "/start" && $chatType == 'private') {
-        Log::info("New subscriber: " . $chatId);
-        Subscriber::firstOrCreate(['chat_id' => $chatId]);
-        $this->sendText($chatId, "Botga xush kelibsiz! Bazalarni sizga yuboraman.");
-        return response('ok');
-    }
-
-    // 🟢 3) Matn bo‘lsa guruhdan yubormaymiz (faqat private matn qabul qilinadi)
-    if ($chatType != 'private' && !$this->isFileMessage($msg)) {
-        return response('ok');
-    }
-
-    // 🟢 4) Faqat fayllar broadcast qilinadi
-    if ($this->isFileMessage($msg)) {
-        $this->broadcastFile($msg);
-    }
-
-    return response('ok');
-}
 
 
     // 🔍 Fayl borligini tekshirish
@@ -75,8 +75,8 @@ class SubscriberController extends Controller
         $GROUP_RECEIVERS = [7510409703, 1056304469];
 
         // 🔹 Botga private tashlangan fayllar uchun
-        $PRIVATE_RECEIVERS = [75714317,6757738816,7510409703,1056304469];
-        
+        $PRIVATE_RECEIVERS = [75714317, 6757738816, 7510409703, 1056304469];
+
         $ALLOWED_SENDER = 7510409703;
         $ALLOWED_GROUP_SENDER = -1003062759085;
 
@@ -88,7 +88,8 @@ class SubscriberController extends Controller
 
             foreach ($GROUP_RECEIVERS as $receiver) {
 
-                if ($receiver == $fromChatId) continue;
+                if ($receiver == $fromChatId)
+                    continue;
 
                 $this->sendFile($receiver, $msg);
             }
@@ -97,7 +98,8 @@ class SubscriberController extends Controller
 
             foreach ($PRIVATE_RECEIVERS as $receiver) {
 
-                if ($receiver == $fromChatId) continue;
+                if ($receiver == $fromChatId)
+                    continue;
 
                 $this->sendFile($receiver, $msg);
             }
@@ -109,12 +111,12 @@ class SubscriberController extends Controller
     private function forward($to, $from, $msgId)
     {
         Http::post($this->api . "forwardMessage", [
-            'chat_id'      => $to,
+            'chat_id' => $to,
             'from_chat_id' => $from,
-            'message_id'   => $msgId,
+            'message_id' => $msgId,
         ]);
     }
-     public function sendText($chatId, $text, $parseMode = 'HTML')
+    public function sendText($chatId, $text, $parseMode = 'HTML')
     {
         return Http::post($this->api . 'sendMessage', [
             'chat_id' => $chatId,
@@ -123,17 +125,17 @@ class SubscriberController extends Controller
     }
 
     private function sendFile($chatId, $msg)
-{
-    // Document
-    if (isset($msg['document'])) {
-        Http::post($this->api . "sendDocument", [
-            'chat_id' => $chatId,
-            'document' => $msg['document']['file_id'],
-            // 'caption' => $msg['caption'] ?? null
-        ]);
+    {
+        // Document
+        if (isset($msg['document'])) {
+            Http::post($this->api . "sendDocument", [
+                'chat_id' => $chatId,
+                'document' => $msg['document']['file_id'],
+                // 'caption' => $msg['caption'] ?? null
+            ]);
+        }
+
+
     }
-
-
-}
 
 }

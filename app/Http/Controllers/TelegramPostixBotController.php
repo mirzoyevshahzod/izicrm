@@ -31,12 +31,6 @@ class TelegramPostixBotController extends Controller
                 ->asJson()
                 ->post($url, $request->all());
 
-            Log::info('POSTIX webhook forwarded', [
-                'url' => $url,
-                'status' => $response->status(),
-                'body' => $request->all(),
-            ]);
-
             if ($response->successful()) {
                 return response()->json([
                     'ok' => true,
