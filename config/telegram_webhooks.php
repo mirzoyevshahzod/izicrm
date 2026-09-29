@@ -11,8 +11,8 @@
 
 return [
 
-    // Webhook qayta o'rnatilganda xabar yuboriladigan Telegram chat ID
-    'notify_chat_id' => env('TELEGRAM_WEBHOOK_NOTIFY_CHAT_ID', env('TELEGRAM_IT_ADMIN_ID')),
+    // Webhook qayta o'rnatilganda xabar yuboriladigan Telegram chat ID lar (vergul bilan)
+    'notify_chat_ids' => array_filter(explode(',', env('TELEGRAM_MONITOR_CHAT_IDS', ''))),
 
     'bots' => [
         'logistic_group_bot' => [

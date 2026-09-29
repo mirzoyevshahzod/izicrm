@@ -75,20 +75,28 @@ class WatchTelegramWebhooks extends Command
 
     private function notify(array $restored): void
     {
-        $chatId = config('telegram_webhooks.notify_chat_id');
-        $token = config('services.telegram.e_ombor_bot_token');
+        $chatIds = config('telegram_webhooks.notify_chat_ids', []);
+        $token = config('services.telegram.izicrm_monitor_bot_token');
 
-        if (empty($restored) || empty($chatId) || empty($token)) {
+        if (empty($restored) || empty($chatIds) || empty($token)) {
             return;
         }
 
-        try {
-            Http::timeout(15)->asForm()->post("https://api.telegram.org/bot{$token}/sendMessage", [
-                'chat_id' => $chatId,
-                'text'    => "⚠️ Webhook uzilgan edi, qayta o'rnatildi:\n\n" . implode("\n", $restored),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Webhook watch notify failed', ['error' => $e->getMessage()]);
+        $text = "⚠️ Webhook uzilgan edi, qayta o'rnatildi:\n\n" . implode("\n", $restored);
+
+        foreach ($chatIds as $chatId) {
+            try {
+                $response = Http::timeout(15)->asForm()->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                    'chat_id' => trim($chatId),
+                    'text'    => $text,
+                ]);
+
+                if (!$response->json('ok')) {
+                    Log::warning("Webhook watch notify [$chatId] failed", ['response' => $response->json()]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Webhook watch notify [$chatId] failed", ['error' => $e->getMessage()]);
+            }
         }
     }
 }

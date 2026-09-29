@@ -54,6 +54,7 @@ return [
         'myfin_egs_bot_token' => env('TELEGRAM_MYFIN_EGS_BOT_TOKEN'),
         'myfin_express_bot_token' => env('TELEGRAM_MYFIN_EXPRESS_BOT_TOKEN'),
         'express_bot_token' => env('TELEGRAM_EXPRESS_BOT_TOKEN'),
+        'izicrm_monitor_bot_token' => env('TELEGRAM_IZICRM_MONITOR_BOT_TOKEN'),
     ],
 
 ];
