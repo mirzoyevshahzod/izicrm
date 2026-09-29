@@ -40,3 +40,8 @@ Schedule::command('telegram:webhook-watch')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/telegram-webhook-watch.log'));
+
+// Komandalar vaqtida ishlayotganini tekshiradi (config/monitor.php)
+Schedule::command('monitor:heartbeat')
+    ->everyTenMinutes()
+    ->withoutOverlapping();

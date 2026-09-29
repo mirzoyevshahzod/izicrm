@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\MonitorNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -70,33 +71,8 @@ class WatchTelegramWebhooks extends Command
             }
         }
 
-        $this->notify($restored);
-    }
-
-    private function notify(array $restored): void
-    {
-        $chatIds = config('telegram_webhooks.notify_chat_ids', []);
-        $token = config('services.telegram.izicrm_monitor_bot_token');
-
-        if (empty($restored) || empty($chatIds) || empty($token)) {
-            return;
-        }
-
-        $text = "⚠️ Webhook uzilgan edi, qayta o'rnatildi:\n\n" . implode("\n", $restored);
-
-        foreach ($chatIds as $chatId) {
-            try {
-                $response = Http::timeout(15)->asForm()->post("https://api.telegram.org/bot{$token}/sendMessage", [
-                    'chat_id' => trim($chatId),
-                    'text'    => $text,
-                ]);
-
-                if (!$response->json('ok')) {
-                    Log::warning("Webhook watch notify [$chatId] failed", ['response' => $response->json()]);
-                }
-            } catch (\Throwable $e) {
-                Log::warning("Webhook watch notify [$chatId] failed", ['error' => $e->getMessage()]);
-            }
+        if ($restored) {
+            MonitorNotifier::send("⚠️ Webhook uzilgan edi, qayta o'rnatildi:\n\n" . implode("\n", $restored));
         }
     }
 }

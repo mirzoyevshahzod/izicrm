@@ -55,6 +55,7 @@ return [
         'myfin_express_bot_token' => env('TELEGRAM_MYFIN_EXPRESS_BOT_TOKEN'),
         'express_bot_token' => env('TELEGRAM_EXPRESS_BOT_TOKEN'),
         'izicrm_monitor_bot_token' => env('TELEGRAM_IZICRM_MONITOR_BOT_TOKEN'),
+        'monitor_chat_ids' => array_filter(explode(',', env('TELEGRAM_MONITOR_CHAT_IDS', ''))),
     ],
 
 ];
