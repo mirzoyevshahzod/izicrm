@@ -34,3 +34,9 @@ Schedule::command('telegram:sync-finished')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/telegram-sync.log'));
+
+// Telegram botlar webhookini tekshirib, uzilib qolsa qayta o'rnatadi
+Schedule::command('telegram:webhook-watch')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/telegram-webhook-watch.log'));

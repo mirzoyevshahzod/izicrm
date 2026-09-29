@@ -15,7 +15,7 @@ class TelegramMyfinEgsBotController extends Controller
 
     public function __construct()
     {
-        $this->telegram = new Api('7959294689:AAH_0Ew6iErLzUkOmBU-Pc86vfxT2nhi1nY');
+        $this->telegram = new Api(config('services.telegram.myfin_egs_bot_token'));
     }
 
     public function webhook()

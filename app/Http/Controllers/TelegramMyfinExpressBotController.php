@@ -14,7 +14,7 @@ class TelegramMyfinExpressBotController extends Controller
 
     public function __construct()
     {
-        $this->telegram = new Api('8057512942:AAHmjhKpfk5jnn7_aEHU4_K2j2HTI9yL_pw');
+        $this->telegram = new Api(config('services.telegram.myfin_express_bot_token'));
     }
 
     public function webhook()

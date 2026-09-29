@@ -16,7 +16,7 @@ class TelegramExpressBotController extends Controller
 
     public function __construct()
     {
-        $this->telegram = new Api('8014306352:AAGDzBhv50So0s2yhoYwXOv-b4xrOBHuoSk');
+        $this->telegram = new Api(config('services.telegram.express_bot_token'));
     }
 
     /**
