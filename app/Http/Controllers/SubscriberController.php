@@ -10,11 +10,14 @@ use Illuminate\Support\Facades\Log;
 
 class SubscriberController extends Controller
 {
+
+    private $token;
     private $api;
 
     public function __construct()
     {
-        $this->api = "https://api.telegram.org/bot" . env('TELEGRAM_BOT_TOKEN1') . "/";
+        $this->token = config('services.telegram.e_ombor_bot_token');
+        $this->api = "https://api.telegram.org/bot" . $this->token . "/";
     }
 
     public function webhook(Request $request)

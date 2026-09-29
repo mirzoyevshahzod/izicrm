@@ -20,11 +20,11 @@ return [
             'url'   => 'https://webhook.izicrm.uz/api/telegram/tranceka-webhook',
         ],
         'E_Ombor_Bot' => [
-            'token' => env('TELEGRAM_BOT_TOKEN1'),
+            'token' => env('TELEGRAM_E_OMBOR_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram-webhook',
         ],
         'egs_davomat_bot' => [
-            'token' => env('TELEGRAM_BOT_TOKEN2'),
+            'token' => env('TELEGRAM_DAVOMAT_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram/davomat-webhook',
         ],
         'egs_zadolzhennost_bot' => [

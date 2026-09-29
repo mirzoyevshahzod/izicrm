@@ -76,7 +76,7 @@ class WatchTelegramWebhooks extends Command
     private function notify(array $restored): void
     {
         $chatId = config('telegram_webhooks.notify_chat_id');
-        $token = config('services.telegram.telegram_e_ombor_bot_token');
+        $token = config('services.telegram.e_ombor_bot_token');
 
         if (empty($restored) || empty($chatId) || empty($token)) {
             return;

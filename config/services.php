@@ -35,7 +35,7 @@ return [
         ],
     ],
     'telegram' => [
-        'bot_token' => env('TELEGRAM_BOT_TOKEN2'),
+        'davomat_bot_token' => env('TELEGRAM_DAVOMAT_BOT_TOKEN'),
         'bot_token3' => env('TELEGRAM_BOT_TOKEN3'),
         'contact_bot_token' => env('TELEGRAM_CONTACT_BOT_TOKEN'),
         'incotruck_request_bot' => env('TELEGRAN_INCOTRUCK_BOT_TOKEN'),
@@ -48,7 +48,7 @@ return [
         'egs_attendance_bot_token' => env('TELEGRAM_EGS_ATTENDANCE_BOT_TOKEN'),
         'egs_hr_ids' => array_filter(explode(',', env('EGS_HR_IDS', ''))),
         'egs_boss_ids' => array_filter(explode(',', env('EGS_BOSS_IDS', ''))),
-        'telegram_e_ombor_bot_token' => env('TELEGRAM_BOT_TOKEN1'),
+        'e_ombor_bot_token' => env('TELEGRAM_E_OMBOR_BOT_TOKEN'),
         'mobile_webhook_url' => env('MOBILE_WEBHOOK_URL'),
         'postix_webhook_url' => env('TELEGRAM_POSTIX_WEBHOOK_URL'),
         'myfin_egs_bot_token' => env('TELEGRAM_MYFIN_EGS_BOT_TOKEN'),
