@@ -75,7 +75,6 @@ class CheckAllQueries extends Command
                     }
                 });
             $this->info("🎉 Finished!");
-            $MadelineProto->stop();
         } catch (\Throwable $e) {
             \Log::error('telegram:check-all failed: ' . $e->getMessage());
             MonitorNotifier::send("❌ telegram:check-all to'xtab qoldi\n\n"
