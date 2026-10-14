@@ -20,8 +20,8 @@ class TelegramDavomatController extends Controller
     // HR chat_id lar
     private array $hrIds = [
         997696865,
-        8483752632
-        // 6337758881
+        8483752632,
+        1666524122
         // 7510409703
     ];
     public function __construct()
