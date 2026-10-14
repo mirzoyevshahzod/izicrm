@@ -23,6 +23,7 @@ Route::get('/update-user/{id}', [HomeController::class, 'updateUser']);
 
 Route::get('/attendance-login', [HomeController::class, 'attendanceLogin'])->name('attendanceLogin');
 Route::get('/attendance-dashboard', [HomeController::class, 'attendanceDashboard'])->name('attendance');
+Route::view('/egs-attendance/signature', 'egs-attendance-signature')->name('egs-attendance.signature');
 
 Route::get('/debt-login', [HomeController::class, 'debtLogin'])->name('debtLogin');
 Route::get('/debt-dashboard', [HomeController::class, 'debtDashboard'])->name('debtDashboard');
