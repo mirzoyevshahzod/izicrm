@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use PhpOffice\PhpWord\TemplateProcessor;
@@ -63,22 +62,8 @@ class EGSAttendanceBotController extends Controller
             ->first();
 
         if ($lateEvent && $text) {
-            $this->handleLateReasonInput($chatId, $lateEvent, $text, $existingEmployee);
+            $this->handleLateReasonInput($chatId, $lateEvent, $text);
             return response()->json(['ok' => true]);
-        }
-
-        // 🔵 IMZO KUTILMOQDA — buyruq bo'lmagan matn yozsa, imzo tugmasini qayta yuboramiz
-        if ($text && !str_starts_with($text, '/')) {
-            $signatureEvent = DB::table('attendance_late_events')
-                ->where('chat_id', $chatId)
-                ->where('status', 'waiting_signature')
-                ->latest()
-                ->first();
-
-            if ($signatureEvent) {
-                $this->sendSignatureRequest($chatId, $signatureEvent->id);
-                return response()->json(['ok' => true]);
-            }
         }
 
         // 🔵 REGISTER FLOW — telefon kutilmoqda
@@ -433,7 +418,7 @@ class EGSAttendanceBotController extends Controller
      * "Sababini yozish" tugmasi bosilganda
      */
     /**
-     * Tugmalar bosilganda: "Sababini yozish" → kompaniya tanlash → sabab yozish
+     * Tugmalar bosilganda: "Sababini yozish" → sabab yozish → kompaniya tanlash → tushuntirish xati
      */
     private function handleCallback(array $callback): void
     {
@@ -579,7 +564,7 @@ class EGSAttendanceBotController extends Controller
         }
 
 
-        // 1️⃣ "Sababini yozish" bosildi — kompaniya tanlashni ko'rsatamiz
+        // 1️⃣ "Sababini yozish" bosildi — sabab yozishni so'raymiz
         if ($data === 'write_late_reason') {
 
             $lateEvent = DB::table('attendance_late_events')
@@ -593,11 +578,23 @@ class EGSAttendanceBotController extends Controller
                 return;
             }
 
-            $this->showCompanyList($chatId, $callback['message']['message_id']);
+            DB::table('attendance_late_events')
+                ->where('id', $lateEvent->id)
+                ->update([
+                    'status' => 'waiting_reason',
+                    'updated_at' => now(),
+                ]);
+
+            Http::post($this->apiUrl . '/editMessageText', [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+                'text' => "✍️ Kech qolish sababingizni yozing:",
+            ]);
+
             return;
         }
 
-        // 2️⃣ Kompaniya tanlandi
+        // 2️⃣ Kompaniya tanlandi — tushuntirish xatini yaratamiz
         if (str_starts_with($data, 'company_')) {
 
             $companyKey = str_replace('company_', '', $data);
@@ -605,36 +602,57 @@ class EGSAttendanceBotController extends Controller
             $lateEvent = DB::table('attendance_late_events')
                 ->where('chat_id', $chatId)
                 ->where('status', 'waiting_company')
+                ->whereNotNull('reason')
                 ->latest()
                 ->first();
 
             if (!$lateEvent) {
-                $this->sendMessage($chatId, "❌ Kech qolish ma'lumotlari topilmadi.");
+                $this->sendMessage($chatId, "❌ Kech qolish topilmadi yoki tushuntirish xati allaqachon yuborilgan.");
                 return;
             }
 
-            DB::table('attendance_late_events')
+            // Atomik "band qilish" — ikki marta bosilsa ikkinchisi o'tmaydi
+            $claimed = DB::table('attendance_late_events')
                 ->where('id', $lateEvent->id)
+                ->where('status', 'waiting_company')
                 ->update([
                     'company' => $companyKey,
-                    'status' => 'waiting_reason',
+                    'status' => 'completed',
                     'updated_at' => now(),
                 ]);
 
+            if (!$claimed) {
+                return;
+            }
+
             Http::post($this->apiUrl . '/editMessageText', [
                 'chat_id' => $chatId,
-                'message_id' => $callback['message']['message_id'],
-                'text' => "✅ Kompaniya tanlandi.\n\n✍️ Endi kech qolish sababingizni yozing:",
+                'message_id' => $messageId,
+                'text' => "✅ Kompaniya tanlandi.\n\n⏳ Tushuntirish xati tayyorlanmoqda...",
             ]);
+
+            $lateEvent = DB::table('attendance_late_events')->where('id', $lateEvent->id)->first();
+
+            try {
+                $this->completeLateEvent($chatId, $lateEvent);
+            } catch (\Throwable $e) {
+                Log::error('EGS explanation letter error', ['late_event_id' => $lateEvent->id, 'error' => $e->getMessage()]);
+
+                DB::table('attendance_late_events')
+                    ->where('id', $lateEvent->id)
+                    ->update(['status' => 'waiting_company', 'updated_at' => now()]);
+
+                $this->showCompanyList($chatId, "❌ Xatolik yuz berdi. Iltimos, kompaniyani qaytadan tanlang:");
+            }
 
             return;
         }
     }
 
     /**
-     * Kompaniya tanlash tugmalarini ko'rsatadi
+     * Kompaniya tanlash tugmalarini yangi xabar sifatida yuboradi
      */
-    private function showCompanyList(int $chatId, int $messageId): void
+    private function showCompanyList(int $chatId, string $text = "✍️ Iltimos, kompaniyangizni tanlang:"): void
     {
         $keyboard = [
             [
@@ -650,10 +668,9 @@ class EGSAttendanceBotController extends Controller
             ],
         ];
 
-        Http::post($this->apiUrl . '/editMessageText', [
+        Http::post($this->apiUrl . '/sendMessage', [
             'chat_id' => $chatId,
-            'message_id' => $messageId,
-            'text' => "✍️ Iltimos, kompaniyangizni tanlang:",
+            'text' => $text,
             'reply_markup' => [
                 'inline_keyboard' => $keyboard,
             ],
@@ -661,151 +678,28 @@ class EGSAttendanceBotController extends Controller
     }
 
     /**
-     * Xodim sabab matnini yozib yuborganda
+     * Xodim sabab matnini yozib yuborganda — saqlab, kompaniya tanlashni so'raymiz
      */
-    private function handleLateReasonInput(int $chatId, object $lateEvent, string $reasonText, ?object $employee): void
+    private function handleLateReasonInput(int $chatId, object $lateEvent, string $reasonText): void
     {
         DB::table('attendance_late_events')
             ->where('id', $lateEvent->id)
             ->update([
                 'reason' => $reasonText,
-                'status' => 'waiting_signature',
+                'status' => 'waiting_company',
                 'updated_at' => now(),
             ]);
 
-        $this->sendSignatureRequest($chatId, $lateEvent->id);
+        $this->showCompanyList($chatId, "✅ Sababingiz qabul qilindi.\n\n🏢 Endi kompaniyangizni tanlang:");
     }
 
     /**
-     * Xodimga Mini App orqali imzo qo'yish tugmasini yuboradi
+     * Kompaniya tanlangandan keyin — bazaga yozadi, Word yaratadi, xodim va HR'ga yuboradi
      */
-    private function sendSignatureRequest(int $chatId, int $lateEventId): void
-    {
-        $url = rtrim(config('app.url'), '/') . route('egs-attendance.signature', ['event' => $lateEventId], false);
-
-        $response = Http::post($this->apiUrl . '/sendMessage', [
-            'chat_id' => $chatId,
-            'text' => "✅ Sababingiz qabul qilindi.\n\n✍️ Endi quyidagi tugma orqali imzo qo'ying:",
-            'reply_markup' => [
-                'inline_keyboard' => [
-                    [
-                        [
-                            'text' => "✍️ Imzo qo'yish",
-                            // APP_URL'dan olamiz — proxy (ngrok) ortida route() http:// qaytaradi, Telegram esa faqat https qabul qiladi
-                            'web_app' => ['url' => $url],
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-
-        if (!$response->json('ok')) {
-            Log::error('EGS signature button not sent', [
-                'chat_id' => $chatId,
-                'url' => $url,
-                'telegram' => $response->json('description'),
-            ]);
-        }
-    }
-
-    /**
-     * Mini App'dan imzo keladi — tekshirib, tushuntirish xatini yaratadi va yuboradi
-     */
-    public function signature(Request $request)
-    {
-        $validated = $request->validate([
-            'event_id' => 'required|integer',
-            'init_data' => 'required|string',
-            'signature' => 'required|string|max:2000000',
-        ]);
-
-        $chatId = $this->validateInitData($validated['init_data']);
-
-        if (!$chatId) {
-            return response()->json(['ok' => false, 'message' => "Telegram ma'lumotlari tasdiqlanmadi"], 403);
-        }
-
-        if (!preg_match('#^data:image/png;base64,(.+)$#', $validated['signature'], $m)
-            || !($png = base64_decode($m[1], true))
-            || !@getimagesizefromstring($png)) {
-            return response()->json(['ok' => false, 'message' => "Imzo rasmi noto'g'ri"], 422);
-        }
-
-        // Atomik "band qilish" — ikki marta bosilsa ikkinchisi o'tmaydi
-        $claimed = DB::table('attendance_late_events')
-            ->where('id', $validated['event_id'])
-            ->where('chat_id', $chatId)
-            ->where('status', 'waiting_signature')
-            ->update(['status' => 'completed', 'updated_at' => now()]);
-
-        if (!$claimed) {
-            return response()->json(['ok' => false, 'message' => "Kech qolish topilmadi yoki allaqachon imzolangan"], 404);
-        }
-
-        $lateEvent = DB::table('attendance_late_events')->where('id', $validated['event_id'])->first();
-
-        try {
-            $signaturePath = "signatures/egs/{$lateEvent->id}.png";
-            Storage::disk('local')->put($signaturePath, $png);
-
-            DB::table('attendance_late_events')
-                ->where('id', $lateEvent->id)
-                ->update(['signature_path' => $signaturePath]);
-
-            $this->completeLateEvent($chatId, $lateEvent, Storage::disk('local')->path($signaturePath));
-        } catch (\Throwable $e) {
-            Log::error('EGS signature error', ['late_event_id' => $lateEvent->id, 'error' => $e->getMessage()]);
-
-            DB::table('attendance_late_events')
-                ->where('id', $lateEvent->id)
-                ->update(['status' => 'waiting_signature', 'updated_at' => now()]);
-
-            return response()->json(['ok' => false, 'message' => "Xatolik yuz berdi, qaytadan urinib ko'ring"], 500);
-        }
-
-        return response()->json(['ok' => true]);
-    }
-
-    /**
-     * Telegram WebApp initData imzosini tekshiradi, to'g'ri bo'lsa user id qaytaradi
-     * https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-     */
-    private function validateInitData(string $initData): ?int
-    {
-        parse_str($initData, $data);
-
-        $hash = $data['hash'] ?? null;
-        if (!$hash) {
-            return null;
-        }
-        unset($data['hash']);
-
-        ksort($data);
-        $checkString = collect($data)->map(fn ($v, $k) => "{$k}={$v}")->implode("\n");
-
-        $secretKey = hash_hmac('sha256', $this->botToken, 'WebAppData', true);
-
-        if (!hash_equals(hash_hmac('sha256', $checkString, $secretKey), $hash)) {
-            return null;
-        }
-
-        if (now()->timestamp - (int) ($data['auth_date'] ?? 0) > 86400) {
-            return null;
-        }
-
-        $user = json_decode($data['user'] ?? '', true);
-
-        return isset($user['id']) ? (int) $user['id'] : null;
-    }
-
-    /**
-     * Imzo olingandan keyin — bazaga yozadi, Word yaratadi, xodim va HR'ga yuboradi
-     */
-    private function completeLateEvent(int $chatId, object $lateEvent, string $signatureFile): void
+    private function completeLateEvent(int $chatId, object $lateEvent): void
     {
         $reasonText = $lateEvent->reason;
 
-        // ⬇️ Endi xodim tanlagan kompaniyadan olinadi (department'dan emas)
         $companyData = $this->getCompanyData($lateEvent->company);
 
         $fioShort = $this->formatFioShort($lateEvent->fio);
@@ -819,7 +713,6 @@ class EGSAttendanceBotController extends Controller
             'year' => $lateEvent->year,
             'late_minutes' => $this->minutesToHoursMinutes($lateEvent->late_minutes),
             'reason' => $reasonText,
-            'signature' => $signatureFile,
         ]);
 
         DB::table('attendances')->insert([
@@ -853,7 +746,7 @@ class EGSAttendanceBotController extends Controller
 
         @unlink($docPath);
 
-        $this->sendMessage($chatId, "✅ Imzo qabul qilindi va tushuntirish xati tayyorlandi. Rahmat!");
+        $this->sendMessage($chatId, "✅ Tushuntirish xati tayyorlandi. Rahmat!");
     }
 
     /**
@@ -937,12 +830,8 @@ class EGSAttendanceBotController extends Controller
         $template->setValue('reason', $data['reason']);
         $template->setValue('late_minutes', $data['late_minutes']);
         $template->setValue('today', now()->format('d.m.Y'));
-        $template->setImageValue('signature', [
-            'path' => $data['signature'],
-            'width' => 150,
-            'height' => 60,
-            'ratio' => true,
-        ]);
+        // Shablonda ${signature} joyi qolgan — bo'sh qoldiramiz
+        $template->setValue('signature', '');
 
         $dir = storage_path('app/generated');
         if (!is_dir($dir)) {
