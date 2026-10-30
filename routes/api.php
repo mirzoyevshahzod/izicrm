@@ -23,6 +23,7 @@ use App\Http\Controllers\MaterialRequestController;
 use App\Http\Controllers\RequestBotContoller;
 use App\Http\Controllers\TariffTelegramController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\TelegramMobileAppBotController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -46,6 +47,7 @@ Route::post('/telegram/myfin-express-webhook', [TelegramMyfinExpressBotControlle
 Route::post('/telegram/postix-webhook', [TelegramPostixBotController::class, 'postixWebhook']);
 Route::post('/candidate/telegram/webhook', [TelegramCandidateBotController::class, 'candidate']);
 Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class, 'express']);
+Route::post('/telegram/mobile-app-webhook', [TelegramMobileAppBotController::class, 'mobileApp']);
 
 
 Route::post('/login', [AuthController::class, 'login']);

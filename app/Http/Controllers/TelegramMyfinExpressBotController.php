@@ -23,7 +23,7 @@ class TelegramMyfinExpressBotController extends Controller
             $update = $this->telegram->getWebhookUpdate();
             Log::info('Update received: ' . json_encode($update)); // Yangilanish logi
 
-            if ($update->getMessage()) {
+            if ($update->objectType() === 'message') {
                 $message = $update->getMessage();
                 $chatId = $message->getChat()->getId();
                 Log::info('Message received from chat ID: ' . $chatId); // Xabar kelgan chat ID
@@ -124,6 +124,12 @@ class TelegramMyfinExpressBotController extends Controller
             // Xatolarni log qilish
             Log::error('Telegram Bot Error: ' . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        } catch (TelegramSDKException $e) {
+            Log::error('Telegram Bot Error: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error: ' . $e->getMessage());
+            return response()->json(['status' => 'ok']); // Telegram qayta yubormasligi uchun 200
         }
     }
 }
