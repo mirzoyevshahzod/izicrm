@@ -58,4 +58,15 @@ return [
         'monitor_chat_ids' => array_filter(explode(',', env('TELEGRAM_MONITOR_CHAT_IDS', ''))),
     ],
 
+    // hh.uz API (https://dev.hh.uz) — rezyume bazasidan qidirish
+    'hh' => [
+        'client_id' => env('HH_CLIENT_ID'),
+        'client_secret' => env('HH_CLIENT_SECRET'),
+        'redirect_uri' => env('HH_REDIRECT_URI', 'https://izicrm.uz/hh/callback'),
+        'user_agent' => env('HH_USER_AGENT', 'IziCRM HR/1.0'),
+        'api_url' => env('HH_API_URL', 'https://api.hh.ru'),
+        'oauth_url' => env('HH_OAUTH_URL', 'https://hh.ru/oauth/authorize'),
+        'host' => env('HH_HOST', 'hh.uz'),
+    ],
+
 ];

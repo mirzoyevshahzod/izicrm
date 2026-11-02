@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\HhAuthController;
 use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,3 +31,5 @@ Route::get('/debt-dashboard', [HomeController::class, 'debtDashboard'])->name('d
 
 Route::get('/debt-test', [HomeController::class, 'debtTest'])->name('debtTest');
 
+// hh.uz OAuth callback (dev.hh.uz dagi Redirect URI bilan bir xil bo'lishi kerak)
+Route::get('/hh/callback', [HhAuthController::class, 'callback']);
