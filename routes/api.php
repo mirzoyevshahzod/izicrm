@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\External\QueryController;
 use App\Http\Controllers\Attendance\EGSAttendanceBotController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtViewController;
 use App\Http\Controllers\TelegramCandidateBotController;
@@ -15,7 +17,6 @@ use App\Http\Controllers\TelegramTrancekaBotController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TelegramContactBotController;
-use App\Http\Controllers\DriversController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\TelegramDavomatController;
 use App\Http\Controllers\TelegramEmployeeController;
@@ -49,33 +50,28 @@ Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class,
 Route::post('/telegram/mobile-app-webhook', [TelegramMobileAppBotController::class, 'mobileApp']);
 
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/attendanceLogin', [AttendanceController::class, 'attendanceLogin']);
-Route::post('/debtLogin', [DebtViewController::class, 'debtLogin']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
+// Panel API — token (sanctum) bilan, bo'limlar spatie ruxsatlari bilan
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/me/password', [AuthController::class, 'changePassword']);
+    Route::get('/dashboard', DashboardController::class);
 
-    // Operatorlarni boshqarish — faqat admin
-    Route::middleware('role:admin')->group(function () {
-        Route::post('/register', [AuthController::class, 'register']);
-        Route::get('/all-operator', [DriversController::class, 'getOperationUsers']);
-        Route::delete('/delete-user/{id}', [DriversController::class, 'deleteOperator']);
-        Route::get('/operator/{id}', [DriversController::class, 'getOperatorById']);
-        Route::put('/operator/{id}', [DriversController::class, 'updateOperator']);
+    Route::middleware('permission:attendance.view')->group(function () {
+        Route::get('/attendances/search', [AttendanceController::class, 'searchAttendance']);
+        Route::get('/attendances/export', [AttendanceController::class, 'exportAttendance']);
     });
 
-    Route::get('/all-drivers', [DriversController::class, 'index']);
-    Route::get('/profile', [DriversController::class, 'profile']);
-    Route::get('/drivers/search', [DriversController::class, 'searchByPhone']);
-    Route::get('/attendance', [AttendanceController::class, 'attendance']);
-    Route::get('/attendances/search', [AttendanceController::class, 'searchAttendance']);
-    Route::get('/attendances/export', [AttendanceController::class, 'exportAttendance']);
-    Route::get('/admin/debts', [DebtViewController::class, 'index']);
-    Route::get('/debts/search', [DebtViewController::class, 'search']);
+    Route::middleware('permission:debts.view')->group(function () {
+        Route::get('/debts/search', [DebtViewController::class, 'search']);
+    });
+
+    Route::middleware('permission:users.manage')->group(function () {
+        Route::apiResource('users', UserController::class)->except('show');
+    });
 });
-
-
 
 
 ////

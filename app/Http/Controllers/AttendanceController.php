@@ -3,59 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use App\Models\Attendance;
 use App\Exports\AttendanceExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AttendanceController extends Controller
 {
-    public function attendanceLogin(Request $request)
-    {
-        $request->validate([
-        'email'    => 'required|email',
-        'password' => 'required',
-    ]);
-
-    $user = User::where('email', $request->email)->first();
-
-    if (!$user || !Hash::check($request->password, $user->password)) {
-        return response()->json([
-            'message' => 'Email yoki parol noto‘g‘ri.'
-        ], 401);
-    }
-
-    // 🔹 Token yaratish
-    $token = $user->createToken('auth_token')->plainTextToken;
-
-    // 🔹 Foydalanuvchi rollarini olish
-    $roles = $user->roles()->pluck('name'); // ['admin', 'operator']
-    return response()->json([
-        'message' => 'Login successful',
-        'access_token' => $token,
-        'token_type' => 'Bearer',
-        'user' => [
-            'id'    => $user->id,
-            'name'  => $user->name,
-            'email' => $user->email,
-            'roles' => $roles
-        ]
-    ], 200);
-
-    }
-
-    public function attendance(){
-        $attendance = Attendance::query()
-        ->orderBy('created_at', 'desc')
-        ->paginate(10);
-
-        return response()->json([
-            'success' => true,
-            'data' => $attendance
-        ]);
-    }
-
     public function searchAttendance(Request $request)
     {
         $query = Attendance::query()->orderBy('year', 'desc')

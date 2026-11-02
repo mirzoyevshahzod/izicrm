@@ -1,34 +1,34 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HhAuthController;
-use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/oferta', function () {
     return view('oferta');
 });
 
+// Panel — sahifalar ochiq, ma'lumot /api orqali token va ruxsat bilan keladi (public/assets/panel/panel.js)
+Route::view('/login', 'panel.login')->name('login');
+Route::redirect('/', '/panel');
 
+Route::prefix('panel')->group(function () {
+    Route::view('/', 'panel.dashboard')->name('panel');
+    Route::view('/attendance', 'panel.attendance')->name('panel.attendance');
+    Route::view('/debts', 'panel.debts')->name('panel.debts');
+    Route::view('/users', 'panel.users')->name('panel.users');
+    Route::view('/profile', 'panel.profile')->name('panel.profile');
+});
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/login', [HomeController::class, 'login'])->name('login');
-
-Route::get('/drivers', [HomeController::class, 'drivers'])->name('drivers');
-
-Route::get('/operation-list', [HomeController::class, 'operation']);
-Route::get('/admin-profile', [HomeController::class, 'profile']);
-Route::get('/add-user', [HomeController::class, 'addUser']);
-Route::get('/update-user/{id}', [HomeController::class, 'updateUser']);
-
-Route::get('/attendance-login', [HomeController::class, 'attendanceLogin'])->name('attendanceLogin');
-Route::get('/attendance-dashboard', [HomeController::class, 'attendanceDashboard'])->name('attendance');
-
-Route::get('/debt-login', [HomeController::class, 'debtLogin'])->name('debtLogin');
-Route::get('/debt-dashboard', [HomeController::class, 'debtDashboard'])->name('debtDashboard');
-
-
-Route::get('/debt-test', [HomeController::class, 'debtTest'])->name('debtTest');
+// Eski manzillar — saqlab qo'yilgan havolalar ishlashi uchun
+Route::permanentRedirect('/attendance-login', '/login');
+Route::permanentRedirect('/debt-login', '/login');
+Route::permanentRedirect('/attendance-dashboard', '/panel/attendance');
+Route::permanentRedirect('/debt-dashboard', '/panel/debts');
+Route::permanentRedirect('/operation-list', '/panel/users');
+Route::permanentRedirect('/add-user', '/panel/users');
+Route::permanentRedirect('/update-user/{id}', '/panel/users');
+Route::permanentRedirect('/admin-profile', '/panel/profile');
+Route::permanentRedirect('/drivers', '/panel');
 
 // hh.uz OAuth callback (dev.hh.uz dagi Redirect URI bilan bir xil bo'lishi kerak)
 Route::get('/hh/callback', [HhAuthController::class, 'callback']);
