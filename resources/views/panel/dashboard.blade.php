@@ -3,11 +3,10 @@
 @section('title', __('Bosh sahifa'))
 
 @section('content')
-    <div class="page-head">
-        <div>
-            <h2>{{ __('Assalomu alaykum') }}, <span id="greet-name"></span></h2>
-            <p id="today"></p>
-        </div>
+    <div class="hero">
+        <h2>{{ __('Assalomu alaykum') }}, <span id="greet-name"></span> 👋</h2>
+        <p id="today"></p>
+        <svg class="icon hero-icon"><use href="#i-home"></use></svg>
     </div>
 
     <div class="grid stats" id="stats"></div>

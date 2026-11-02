@@ -480,3 +480,190 @@ audio { width: 100%; }
 .lang-switch button:hover { color: var(--text); }
 .lang-switch button.active { background: var(--primary); color: #fff; }
 .auth-theme { display: flex; gap: 8px; align-items: center; }
+
+/* =====================================================================
+   Bezak qatlami: gradientlar, chuqurlik, animatsiyalar.
+   Yuqoridagi asosiy qoidalarni ustidan yozadi, ranglar tokenlardan.
+   ===================================================================== */
+:root {
+    --grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+    --grad-soft: linear-gradient(135deg, rgba(99, 102, 241, .12), rgba(168, 85, 247, .10));
+    --shadow-lg: 0 2px 4px rgba(15, 23, 42, .04), 0 12px 32px rgba(15, 23, 42, .10);
+    --glow: 0 6px 20px rgba(99, 102, 241, .35);
+    --radius: 14px;
+}
+:root[data-theme="dark"] { --shadow-lg: 0 2px 4px rgba(0, 0, 0, .35), 0 16px 40px rgba(0, 0, 0, .45); --glow: 0 6px 24px rgba(129, 140, 248, .30); }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --shadow-lg: 0 2px 4px rgba(0, 0, 0, .35), 0 16px 40px rgba(0, 0, 0, .45); --glow: 0 6px 24px rgba(129, 140, 248, .30); }
+}
+
+body {
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-feature-settings: "cv11", "ss01";
+    background:
+        radial-gradient(900px 420px at 100% -10%, rgba(139, 92, 246, .08), transparent 60%),
+        radial-gradient(700px 380px at 20% -15%, rgba(99, 102, 241, .07), transparent 60%),
+        var(--bg);
+    background-attachment: fixed;
+}
+
+::selection { background: rgba(99, 102, 241, .22); }
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Yon menyu ---------- */
+.sidebar {
+    background:
+        radial-gradient(420px 260px at 0% 0%, rgba(99, 102, 241, .22), transparent 70%),
+        radial-gradient(320px 240px at 100% 100%, rgba(168, 85, 247, .14), transparent 70%),
+        linear-gradient(180deg, #0f172a 0%, #0b1224 100%);
+    border-right: 1px solid rgba(255, 255, 255, .04);
+}
+.brand { font-size: 18px; }
+.brand-mark { background: var(--grad); box-shadow: var(--glow); font-weight: 800; letter-spacing: -.02em; }
+.nav-label { color: #64748b; letter-spacing: .08em; }
+.nav-item { position: relative; transition: background .15s, color .15s, transform .15s; }
+.nav-item:hover { transform: translateX(2px); }
+.nav-item .icon { transition: color .15s; }
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(99, 102, 241, .28), rgba(139, 92, 246, .10));
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(165, 180, 252, .14);
+}
+.nav-item.active::before {
+    content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 4px;
+    border-radius: 0 4px 4px 0; background: var(--grad);
+}
+.sidebar-footer { margin: 12px; padding: 12px; border: 1px solid rgba(255, 255, 255, .06); border-radius: 12px; background: rgba(255, 255, 255, .03); }
+.sidebar .avatar { background: var(--grad); color: #fff; box-shadow: var(--glow); }
+
+/* ---------- Yuqori panel ---------- */
+.topbar { height: 68px; background: color-mix(in srgb, var(--surface) 72%, transparent); backdrop-filter: saturate(180%) blur(12px); }
+.topbar h1 { font-size: 19px; font-weight: 700; }
+.user-menu > button { border: 1px solid var(--border); background: var(--surface); padding-right: 12px; transition: box-shadow .15s; }
+.user-menu > button:hover { box-shadow: var(--shadow); background: var(--surface); }
+.avatar { background: var(--grad-soft); }
+.dropdown { box-shadow: var(--shadow-lg); animation: pop .12s ease; }
+
+/* ---------- Kontent paydo bo'lishi ---------- */
+.content > * { animation: rise .35s cubic-bezier(.2, .8, .2, 1) both; }
+.content > *:nth-child(2) { animation-delay: .04s; }
+.content > *:nth-child(3) { animation-delay: .08s; }
+.content > *:nth-child(4) { animation-delay: .12s; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .content > *, .modal-dialog, .toast, .dropdown { animation: none !important; } }
+
+/* ---------- Kartochkalar ---------- */
+.card { border-color: color-mix(in srgb, var(--border) 80%, transparent); }
+.card-header h2 { font-size: 16px; }
+.quick-link, .search-card, .candidate { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.quick-link:hover, .search-card:hover, .candidate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+.quick-link .icon.arrow { transition: transform .18s ease, color .18s; }
+.quick-link:hover .icon.arrow { transform: translateX(3px); color: var(--primary); }
+
+/* Statistika: tepada rangli chiziq, ikonka gradientli */
+.stat { position: relative; overflow: hidden; --accent: var(--grad); }
+.stat::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--accent); opacity: .9; }
+.stat:has(.stat-icon.amber) { --accent: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.stat:has(.stat-icon.red) { --accent: linear-gradient(90deg, #ef4444, #f97316); }
+.stat:has(.stat-icon.green) { --accent: linear-gradient(90deg, #10b981, #22c55e); }
+.stat > div { min-width: 0; }
+.grid.stats .stat { flex-direction: column; gap: 14px; }
+.grid.stats { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+@media (max-width: 600px) { .grid.stats { grid-template-columns: 1fr 1fr; gap: 12px; } .grid.stats .stat { padding: 16px; } }
+.stat-icon { width: 48px; height: 48px; border-radius: 14px; }
+.stat-value { font-size: clamp(20px, 1.9vw, 28px); font-weight: 800; letter-spacing: -.03em; overflow-wrap: anywhere; }
+.stat-label { font-weight: 500; }
+
+/* Bosh sahifa: salomlashuv bloki */
+.hero {
+    position: relative; overflow: hidden; margin-bottom: 20px; padding: 28px 28px 26px;
+    border-radius: 18px; color: #fff; background: var(--grad); box-shadow: var(--glow);
+}
+.hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
+.hero::before { width: 320px; height: 320px; right: -80px; top: -140px; background: rgba(255, 255, 255, .14); }
+.hero::after { width: 220px; height: 220px; right: 140px; bottom: -150px; background: rgba(255, 255, 255, .08); }
+.hero h2 { position: relative; margin: 0; font-size: 26px; letter-spacing: -.02em; }
+.hero p { position: relative; margin: 6px 0 0; color: rgba(255, 255, 255, .82); }
+.hero .hero-icon { position: absolute; right: 28px; top: 50%; transform: translateY(-50%); width: 64px; height: 64px; opacity: .25; stroke-width: 1.5; }
+@media (max-width: 600px) { .hero { padding: 22px 20px; } .hero h2 { font-size: 21px; } .hero .hero-icon { display: none; } }
+
+/* ---------- Tugmalar ---------- */
+.btn { border-radius: 10px; transition: background .15s, box-shadow .15s, transform .08s, filter .15s, color .15s, border-color .15s; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+.btn:not(.secondary):not(.ghost):not(.danger) { background: var(--grad); box-shadow: 0 1px 2px rgba(15, 23, 42, .12), 0 4px 14px rgba(99, 102, 241, .28); }
+.btn:not(.secondary):not(.ghost):not(.danger):hover { filter: brightness(1.06) saturate(1.05); box-shadow: 0 2px 4px rgba(15, 23, 42, .12), 0 8px 22px rgba(99, 102, 241, .36); }
+.btn.secondary { box-shadow: 0 1px 2px rgba(15, 23, 42, .05); }
+.btn.secondary:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); color: var(--primary); }
+.btn.danger { box-shadow: 0 4px 14px rgba(220, 38, 38, .25); }
+
+/* ---------- Maydonlar ---------- */
+.input, .select { height: 42px; border-radius: 10px; background: var(--surface-2); }
+.input:hover, .select:hover { border-color: color-mix(in srgb, var(--primary) 25%, var(--border)); }
+.input:focus, .select:focus { background: var(--surface); box-shadow: 0 0 0 4px var(--primary-soft); }
+.select { appearance: none; padding-right: 34px; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; }
+.toolbar { background: linear-gradient(180deg, var(--surface), var(--surface-2)); border-radius: var(--radius) var(--radius) 0 0; }
+
+/* ---------- Jadval ---------- */
+.table th { background: transparent; border-bottom-width: 1px; font-size: 11px; letter-spacing: .06em; }
+.table tbody tr { transition: background .12s; }
+.table tbody tr:hover td { background: color-mix(in srgb, var(--primary-soft) 55%, transparent); }
+.table td { padding-top: 15px; padding-bottom: 15px; }
+
+/* ---------- Belgilar, tablar, sahifalash ---------- */
+.badge { padding: 3px 10px; }
+.badge.primary { background: var(--grad-soft); }
+.tabs { background: var(--surface); box-shadow: var(--shadow); }
+.tabs button { transition: background .15s, color .15s; }
+.tabs button.active { background: var(--grad); color: #fff; box-shadow: var(--glow); }
+.tabs button.active .count { color: rgba(255, 255, 255, .8); }
+.pagination button { border-radius: 10px; transition: all .15s; }
+.pagination button.active { background: var(--grad); border-color: transparent; box-shadow: var(--glow); }
+
+/* ---------- Til / tema tugmalari ---------- */
+.lang-switch { box-shadow: var(--shadow); }
+.lang-switch button.active { background: var(--grad); box-shadow: var(--glow); }
+.theme-toggle { border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+
+/* ---------- Modal va xabarlar ---------- */
+.modal { backdrop-filter: blur(4px); background: rgba(15, 23, 42, .45); }
+.modal-dialog { border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-lg); }
+.toast { border-radius: 12px; box-shadow: var(--shadow-lg); backdrop-filter: blur(8px); }
+
+/* ---------- Nomzodlar ---------- */
+.score-ring { box-shadow: 0 4px 16px color-mix(in srgb, var(--c) 25%, transparent); }
+.candidate .title { font-size: 17px; }
+.breakdown .bar i { background: var(--grad); }
+.mini-stats div { background: var(--grad-soft); border: 1px solid color-mix(in srgb, var(--primary) 10%, transparent); }
+.mini-stats .v { font-size: 20px; font-weight: 800; }
+.chip { background: var(--grad-soft); }
+.pill-check input:checked + span { background: var(--grad); border-color: transparent; color: #fff; box-shadow: var(--glow); }
+.sticky-bar { backdrop-filter: blur(12px); background: color-mix(in srgb, var(--surface) 88%, transparent); box-shadow: var(--shadow-lg); }
+.form-section > .label { font-size: 14px; }
+.switch input:checked + .track { background: var(--grad); }
+
+/* ---------- Kirish sahifasi ---------- */
+.auth-aside {
+    background:
+        radial-gradient(520px 380px at 15% 10%, rgba(99, 102, 241, .40), transparent 70%),
+        radial-gradient(460px 360px at 90% 90%, rgba(168, 85, 247, .35), transparent 70%),
+        #0b1224;
+}
+.auth-aside::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background-image: linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at 40% 40%, #000 30%, transparent 75%);
+}
+.auth-aside::after { display: none; }
+.auth-aside h2 { font-size: 38px; background: linear-gradient(90deg, #fff, #c7d2fe); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-features div { padding: 10px 14px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 12px; background: rgba(255, 255, 255, .04); backdrop-filter: blur(6px); width: fit-content; }
+.auth-main { background: radial-gradient(600px 400px at 50% 30%, rgba(99, 102, 241, .08), transparent 70%); }
+.auth-card { padding: 32px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-lg); animation: rise .4s cubic-bezier(.2, .8, .2, 1) both; }
+.auth-card h1 { font-size: 26px; }
+.auth-card .btn.block { height: 46px; font-size: 15px; }
+@media (max-width: 860px) { .auth-card { padding: 24px; box-shadow: var(--shadow); } }
