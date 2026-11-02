@@ -287,7 +287,7 @@ document.getElementById('operatorForm').addEventListener('submit', async functio
     const password = document.getElementById('password').value;
 
     try {
-        const response = await fetch('https://izicrm.uz/api/register', {
+        const response = await fetch('/api/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

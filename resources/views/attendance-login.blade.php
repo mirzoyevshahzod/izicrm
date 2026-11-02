@@ -188,7 +188,7 @@
         const password = document.getElementById('password').value;
 
         try {
-            const response = await fetch('https://izicrm.uz/api/attendanceLogin', {
+            const response = await fetch('/api/attendanceLogin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -208,10 +208,10 @@
                 console.log(roles.includes('admin'));
                 // Logindan keyin redirect
                 if (roles.includes('admin')) {
-                    window.location.href = 'https://izicrm.uz/attendance-dashboard';
+                    window.location.href = '/attendance-dashboard';
                 }else {
                     // Default redirect
-                    window.location.href = 'https://izicrm.uz/attendance-dashboard';
+                    window.location.href = '/attendance-dashboard';
                 }
             } else {
                 let errors = '';

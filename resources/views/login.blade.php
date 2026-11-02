@@ -188,7 +188,7 @@
         const password = document.getElementById('password').value;
 
         try {
-            const response = await fetch('https://izicrm.uz/api/login', {
+            const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -208,11 +208,11 @@
                 console.log(roles.includes('admin'));
                 // Logindan keyin redirect
                 if (roles.includes('admin')) {
-                    window.location.href = 'https://izicrm.uz/operation-list';
+                    window.location.href = '/operation-list';
                 }else {
                     // Default redirect
-                    window.location.href = 'https://izicrm.uz/drivers';
-                    // window.location.href = 'https://izicrm.uz/identify-bot/dashboard'; 
+                    window.location.href = '/drivers';
+                    // window.location.href = '/identify-bot/dashboard'; 
 
                 }
             } else {

@@ -303,7 +303,7 @@
                 const password = document.getElementById('password').value;
 
                 try {
-                    const response = await fetch(`https://izicrm.uz/api/operator/${id}`, {
+                    const response = await fetch(`/api/operator/${id}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -344,7 +344,7 @@
             async function loadUser(id) {
                 try {
                     // 🔹 API ga request
-                    const response = await fetch(`https://izicrm.uz/api/operator/${id}`, {
+                    const response = await fetch(`/api/operator/${id}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',

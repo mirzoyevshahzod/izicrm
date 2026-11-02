@@ -184,7 +184,7 @@ async function loadDrivers() {
     tbody.innerHTML = '';
 
     try {
-        const response = await fetch('https://izicrm.uz/api/all-drivers', {
+        const response = await fetch('/api/all-drivers', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ async function loadDrivers() {
            if (driver.files && driver.files.length > 0) {
             filesLinks = `<select class="file-select" onchange="if(this.value) window.location.href=this.value;">
                 <option value="">Fayllarni tanlang</option>
-                ${driver.files.map(f => `<option value="https://izicrm.uz/storage/${f.file_path}">Fayl#${f.id}</option>`).join('')}
+                ${driver.files.map(f => `<option value="/storage/${f.file_path}">Fayl#${f.id}</option>`).join('')}
             </select>`;
 }
 
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', loadDrivers);
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">Qidirilmoqda...</td></tr>`;
 
     try {
-        const response = await fetch(`https://izicrm.uz/api/drivers/search?phone=${phone}`, {
+        const response = await fetch(`/api/drivers/search?phone=${phone}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', loadDrivers);
 
         data.data.forEach((driver, index) => {
             const fileUrl = driver.cmr_file 
-                ? `https://izicrm.uz/storage/${driver.cmr_file}`
+                ? `/storage/${driver.cmr_file}`
                 : null;
 
             tbody.innerHTML += `

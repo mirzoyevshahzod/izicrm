@@ -338,7 +338,7 @@ async function loadDrivers(page = 1) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Yuklanmoqda...</td></tr>`;
 
     try {
-        const response = await fetch(`https://izicrm.uz/api/attendances/search?${query.toString()}`, {
+        const response = await fetch(`/api/attendances/search?${query.toString()}`, {
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('auth_token'),
                 'Accept': 'application/json'
@@ -452,7 +452,7 @@ document.querySelector('.btn-download').addEventListener('click', function () {
     const token = localStorage.getItem('auth_token');
 
     // 🔥 download qilish
-    fetch(`https://izicrm.uz/api/attendances/export?${query.toString()}`, {
+    fetch(`/api/attendances/export?${query.toString()}`, {
         headers: {
             'Authorization': 'Bearer ' + token
         }

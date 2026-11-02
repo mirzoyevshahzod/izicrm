@@ -273,7 +273,7 @@ async function loadProfile() {
     }
 
     try {
-        const response = await fetch("https://izicrm.uz/api/profile", {
+        const response = await fetch("/api/profile", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

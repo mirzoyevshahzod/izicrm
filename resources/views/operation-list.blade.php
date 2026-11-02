@@ -291,7 +291,7 @@
 async function loadOperators() {
     try {
         // 🔹 API ga request
-        const response = await fetch('https://izicrm.uz/api/all-operator', {
+        const response = await fetch('/api/all-operator', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -342,7 +342,7 @@ function editUser(id) {
 function deleteUser(id) {
     if (confirm('Haqiqatdan ham foydalanuvchini o‘chirmoqchimisiz?')) {
         // API orqali delete request yuborish
-        fetch(`https://izicrm.uz/api/delete-user/${id}`, {
+        fetch(`/api/delete-user/${id}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
