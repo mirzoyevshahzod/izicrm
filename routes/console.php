@@ -45,3 +45,10 @@ Schedule::command('telegram:webhook-watch')
 Schedule::command('monitor:heartbeat')
     ->everyTenMinutes()
     ->withoutOverlapping();
+
+// hh.uz: faol filtrlar bo'yicha yangi rezyumelar (qidiruv API limitidan yemaydi)
+Schedule::command('hh:fetch')
+    ->hourly()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/hh-fetch.log'));

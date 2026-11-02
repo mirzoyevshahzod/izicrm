@@ -5,6 +5,7 @@ use App\Http\Controllers\Attendance\EGSAttendanceBotController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HhController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtViewController;
@@ -66,6 +67,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('permission:debts.view')->group(function () {
         Route::get('/debts/search', [DebtViewController::class, 'search']);
+    });
+
+    Route::middleware('permission:hh.view')->prefix('hh')->group(function () {
+        Route::get('/dictionaries', [HhController::class, 'dictionaries']);
+        Route::get('/skills', [HhController::class, 'skills']);
+        Route::post('/preview', [HhController::class, 'preview']);
+        Route::get('/searches', [HhController::class, 'index']);
+        Route::post('/searches', [HhController::class, 'store']);
+        Route::get('/searches/{search}', [HhController::class, 'show']);
+        Route::put('/searches/{search}', [HhController::class, 'update']);
+        Route::delete('/searches/{search}', [HhController::class, 'destroy']);
+        Route::post('/searches/{search}/run', [HhController::class, 'run']);
+        Route::get('/searches/{search}/candidates', [HhController::class, 'candidates']);
+        Route::patch('/candidates/{candidate}', [HhController::class, 'updateCandidate']);
     });
 
     Route::middleware('permission:users.manage')->group(function () {

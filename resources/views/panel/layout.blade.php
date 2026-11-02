@@ -32,6 +32,11 @@
                 <svg class="icon"><use href="#i-wallet"></use></svg> Qarzdorlik
             </a>
 
+            <a href="{{ route('panel.hh', [], false) }}" data-permission="hh.view" hidden
+               class="nav-item @if(request()->routeIs('panel.hh*')) active @endif">
+                <svg class="icon"><use href="#i-briefcase"></use></svg> HH nomzodlar
+            </a>
+
             <div class="nav-label" data-permission="users.manage" hidden>Boshqaruv</div>
             <a href="{{ route('panel.users', [], false) }}" data-permission="users.manage" hidden
                class="nav-item @if(request()->routeIs('panel.users')) active @endif">

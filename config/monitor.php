@@ -15,6 +15,8 @@ return [
     'heartbeats' => [
         // Har soatda ishlaydi, ishlash vaqti bilan birga 2.5 soatgacha kutamiz
         'telegram:check-all' => 150,
+        // Har soatda ishlaydi
+        'hh:fetch' => 150,
     ],
 
 ];

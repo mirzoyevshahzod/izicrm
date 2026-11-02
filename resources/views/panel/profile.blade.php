@@ -37,7 +37,7 @@
 <script>
 Panel.ready.then((user) => {
     const { api, esc, fmt, icon, setLoading, showFieldErrors, toast } = Panel;
-    const labels = { 'attendance.view': 'Davomat', 'debts.view': 'Qarzdorlik', 'users.manage': 'Foydalanuvchilar' };
+    const labels = { 'attendance.view': 'Davomat', 'debts.view': 'Qarzdorlik', 'hh.view': 'HH nomzodlar', 'users.manage': 'Foydalanuvchilar' };
 
     document.getElementById('p-email').textContent = user.email;
     document.getElementById('p-phone').textContent = user.phone_number || '—';

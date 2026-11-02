@@ -14,6 +14,7 @@ return [
     'permissions' => [
         'attendance.view' => 'Davomat',
         'debts.view' => 'Qarzdorlik',
+        'hh.view' => 'HH nomzodlar',
         'users.manage' => 'Foydalanuvchilar',
     ],
 

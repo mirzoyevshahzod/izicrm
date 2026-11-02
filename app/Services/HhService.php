@@ -159,8 +159,29 @@ class HhService
         $http = $this->http()->withToken($token->access_token);
 
         return $method === 'get'
-            ? $http->get($path, $data + $host)
+            ? $http->get($path . '?' . self::buildQuery($data + $host))
             : $http->withQueryParameters($host)->{$method}($path, $data);
+    }
+
+    /**
+     * hh ro'yxatli parametrlarni key=a&key=b ko'rinishida kutadi (key[]= emas).
+     */
+    public static function buildQuery(array $params): string
+    {
+        $pairs = [];
+        foreach ($params as $key => $value) {
+            foreach ((array) $value as $item) {
+                if ($item === null || $item === '') {
+                    continue;
+                }
+                if (is_bool($item)) {
+                    $item = $item ? 'true' : 'false';
+                }
+                $pairs[] = rawurlencode($key) . '=' . rawurlencode((string) $item);
+            }
+        }
+
+        return implode('&', $pairs);
     }
 
     private function http(): PendingRequest
@@ -211,5 +232,86 @@ class HhService
     public function searchResumes(array $params): array
     {
         return $this->get('/resumes', $params);
+    }
+
+    // ---- Ochiq spravochniklar (token shart emas), o'zbek tilida, 1 kun keshda ----
+
+    public function publicGet(string $path, array $query = []): array
+    {
+        $query += ['host' => config('services.hh.host'), 'locale' => 'UZ'];
+        $response = $this->http()->get($path . '?' . self::buildQuery($query));
+
+        if ($response->failed()) {
+            throw new RuntimeException("hh API GET $path xatosi ({$response->status()})");
+        }
+
+        return $response->json() ?? [];
+    }
+
+    public function dictionaries(): array
+    {
+        return Cache::remember('hh:dict:dictionaries', now()->addDay(), fn () => $this->publicGet('/dictionaries'));
+    }
+
+    /** O'zbekiston shahar va tumanlari: [['id' => '2759', 'name' => 'Toshkent'], ...] */
+    public function uzbekistanAreas(): array
+    {
+        return Cache::remember('hh:dict:areas_uz', now()->addDay(), function () {
+            $root = $this->publicGet('/areas/' . \App\Models\HhSearch::UZBEKISTAN_AREA);
+            $flat = [];
+            $walk = function (array $areas) use (&$walk, &$flat) {
+                foreach ($areas as $area) {
+                    $flat[] = ['id' => (string) $area['id'], 'name' => $area['name']];
+                    $walk($area['areas'] ?? []);
+                }
+            };
+            $walk($root['areas'] ?? []);
+            usort($flat, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
+            return $flat;
+        });
+    }
+
+    public function professionalRoles(): array
+    {
+        return Cache::remember('hh:dict:roles', now()->addDay(), function () {
+            return array_map(fn ($c) => [
+                'name' => $c['name'],
+                'roles' => array_map(fn ($r) => ['id' => (string) $r['id'], 'name' => $r['name']], $c['roles']),
+            ], $this->publicGet('/professional_roles')['categories'] ?? []);
+        });
+    }
+
+    public function languages(): array
+    {
+        return Cache::remember('hh:dict:languages', now()->addDay(), fn () => array_map(
+            fn ($l) => ['id' => $l['id'], 'name' => $l['name']],
+            $this->publicGet('/languages')
+        ));
+    }
+
+    public function suggestSkills(string $text): array
+    {
+        $text = mb_substr(trim($text), 0, 50);
+        if (mb_strlen($text) < 2) {
+            return [];
+        }
+
+        return Cache::remember('hh:skill:' . md5(mb_strtolower($text)), now()->addDay(), fn () => array_map(
+            fn ($i) => ['id' => (string) $i['id'], 'text' => $i['text']],
+            $this->publicGet('/suggests/skill_set', ['text' => $text])['items'] ?? []
+        ));
+    }
+
+    /** Valyuta kurslari (hh: RUR ga nisbatan) — maoshni so'mga o'girish uchun */
+    public function currencyRates(): array
+    {
+        return collect($this->dictionaries()['currency'] ?? [])->pluck('rate', 'code')->all();
+    }
+
+    /** API ulanganmi (token bormi) — panelda ogohlantirish uchun */
+    public static function isConnected(): bool
+    {
+        return HhToken::exists();
     }
 }

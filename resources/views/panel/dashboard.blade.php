@@ -26,6 +26,11 @@
                     <div><div class="title">Qarzdorlik</div><div class="desc">Qarzlar va xodim izohlari</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
+                <a class="card quick-link" href="{{ route('panel.hh', [], false) }}" data-permission="hh.view" hidden>
+                    <span class="stat-icon"><svg class="icon"><use href="#i-briefcase"></use></svg></span>
+                    <div><div class="title">HH nomzodlar</div><div class="desc">hh.uz dan mos rezyumelar</div></div>
+                    <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
+                </a>
                 <a class="card quick-link" href="{{ route('panel.users', [], false) }}" data-permission="users.manage" hidden>
                     <span class="stat-icon"><svg class="icon"><use href="#i-users"></use></svg></span>
                     <div><div class="title">Foydalanuvchilar</div><div class="desc">Panelga kirish va ruxsatlar</div></div>
@@ -69,6 +74,9 @@ Panel.ready.then(async (user) => {
         }
         if (s.debts) {
             html += card('wallet', 'red', 'Qarzdorlik summasi', fmt.money(s.debts.total), fmt.number(s.debts.count) + ' ta yozuv');
+        }
+        if (s.hh) {
+            html += card('briefcase', '', 'Yangi nomzodlar (hh.uz)', fmt.number(s.hh.new), fmt.number(s.hh.selected) + ' ta tanlangan');
         }
         if (s.users) {
             html += card('users', 'green', 'Panel foydalanuvchilari', fmt.number(s.users.count));
