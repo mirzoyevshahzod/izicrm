@@ -1,27 +1,27 @@
 @extends('panel.layout')
 
-@section('title', 'Davomat')
+@section('title', __('Davomat'))
 @section('permission', 'attendance.view')
 
 @section('content')
     <div class="card">
         <div class="toolbar">
             <label class="field grow">
-                <span>Xodim <span class="hint">— bir nechtasini vergul bilan</span></span>
+                <span>{{ __('Xodim') }} <span class="hint">— {{ __('bir nechtasini vergul bilan') }}</span></span>
                 <div class="input-icon">
                     <svg class="icon"><use href="#i-search"></use></svg>
-                    <input class="input" id="f-fio" type="search" placeholder="Ism yoki familiya">
+                    <input class="input" id="f-fio" type="search" placeholder="{{ __('Ism yoki familiya') }}">
                 </div>
             </label>
             <label class="field">
-                <span>Kun</span>
+                <span>{{ __('Kun') }}</span>
                 <input class="input" id="f-date" type="date">
             </label>
             <label class="field">
-                <span>Oy</span>
+                <span>{{ __('Oy') }}</span>
                 <input class="input" id="f-month" type="month">
             </label>
-            <button class="btn ghost" id="f-reset" type="button">Tozalash</button>
+            <button class="btn ghost" id="f-reset" type="button">{{ __('Tozalash') }}</button>
             <span class="spacer"></span>
             <button class="btn secondary" id="export" type="button">
                 <svg class="icon"><use href="#i-download"></use></svg> Excel
@@ -33,10 +33,10 @@
                 <thead>
                 <tr>
                     <th style="width:56px">#</th>
-                    <th>Xodim</th>
-                    <th>Kechikish sababi</th>
-                    <th>Kechikish</th>
-                    <th>Sana</th>
+                    <th>{{ __('Xodim') }}</th>
+                    <th>{{ __('Kechikish sababi') }}</th>
+                    <th>{{ __('Kechikish') }}</th>
+                    <th>{{ __('Sana') }}</th>
                 </tr>
                 </thead>
                 <tbody id="rows"></tbody>
@@ -53,7 +53,7 @@
 @push('scripts')
 <script>
 Panel.ready.then(() => {
-    const { api, esc, fmt, icon, pagination, debounce, download, toast, setLoading } = Panel;
+    const { api, esc, fmt, icon, pagination, debounce, download, toast, setLoading, t } = Panel;
     const rows = document.getElementById('rows');
     const f = { fio: document.getElementById('f-fio'), date: document.getElementById('f-date'), month: document.getElementById('f-month') };
     let page = 1;
@@ -81,7 +81,7 @@ Panel.ready.then(() => {
         try {
             const { data } = await api('/attendances/search', { query: { ...filters(), page } });
             if (!data.data.length) {
-                rows.innerHTML = `<tr><td colspan="5"><div class="state">${icon('search')}<div class="title">Hech narsa topilmadi</div><div>Filtrlarni o‘zgartirib ko‘ring</div></div></td></tr>`;
+                rows.innerHTML = `<tr><td colspan="5"><div class="state">${icon('search')}<div class="title">${t('Hech narsa topilmadi')}</div><div>${t('Filtrlarni o‘zgartirib ko‘ring')}</div></div></td></tr>`;
             } else {
                 rows.innerHTML = data.data.map((r, i) => `
                     <tr>
@@ -95,7 +95,7 @@ Panel.ready.then(() => {
                         <td class="nowrap">${String(r.day).padStart(2, '0')}.${String(r.month).padStart(2, '0')}.${r.year}</td>
                     </tr>`).join('');
             }
-            document.getElementById('summary').textContent = `Jami: ${fmt.number(data.total)} ta yozuv`;
+            document.getElementById('summary').textContent = t('Jami: :n ta yozuv', { n: fmt.number(data.total) });
             pagination(document.getElementById('pagination'), data.current_page, data.last_page, load);
         } catch (e) {
             rows.innerHTML = `<tr><td colspan="5"><div class="state">${icon('alert')}<div class="title">${esc(e.message)}</div></div></td></tr>`;
@@ -111,7 +111,7 @@ Panel.ready.then(() => {
         const btn = e.currentTarget;
         setLoading(btn, true);
         try {
-            await download('/attendances/export', filters(), 'davomat.xlsx');
+            await download('/attendances/export', filters(), t('davomat') + '.xlsx');
         } catch (err) {
             toast(err.message, 'error');
         } finally {

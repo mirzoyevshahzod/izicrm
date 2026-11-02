@@ -21,7 +21,7 @@ class UserController extends Controller
 
         return response()->json([
             'users' => $users->map(fn (User $u) => AuthController::userPayload($u)),
-            'permissions' => config('panel.permissions'),
+            'permissions' => array_map('__', config('panel.permissions')),
         ]);
     }
 
@@ -47,7 +47,7 @@ class UserController extends Controller
         $data = $this->validated($request, $user);
 
         if ($user->is($request->user()) && empty($data['is_admin']) && $user->hasRole('admin')) {
-            return response()->json(['message' => 'O‘zingizdan admin huquqini olib bo‘lmaydi.'], 422);
+            return response()->json(['message' => __('O‘zingizdan admin huquqini olib bo‘lmaydi.')], 422);
         }
 
         $user->forceFill([
@@ -69,7 +69,7 @@ class UserController extends Controller
     public function destroy(Request $request, User $user)
     {
         if ($user->is($request->user())) {
-            return response()->json(['message' => 'O‘zingizni o‘chira olmaysiz.'], 422);
+            return response()->json(['message' => __('O‘zingizni o‘chira olmaysiz.')], 422);
         }
 
         $user->tokens()->delete();
@@ -77,7 +77,7 @@ class UserController extends Controller
         $user->syncPermissions([]);
         $user->delete();
 
-        return response()->json(['message' => 'Foydalanuvchi o‘chirildi.']);
+        return response()->json(['message' => __('Foydalanuvchi o‘chirildi.')]);
     }
 
     private function validated(Request $request, ?User $user = null): array
@@ -91,10 +91,10 @@ class UserController extends Controller
             'permissions' => 'array',
             'permissions.*' => ['string', Rule::in(array_keys(config('panel.permissions')))],
         ], [
-            'email.unique' => 'Bu email bilan foydalanuvchi allaqachon bor.',
-            'password.required' => 'Parol kiriting.',
-            'password.min' => 'Parol kamida 8 belgidan iborat bo‘lsin.',
-            'permissions.*.in' => 'Noma’lum ruxsat tanlangan.',
+            'email.unique' => __('Bu email bilan foydalanuvchi allaqachon bor.'),
+            'password.required' => __('Parol kiriting.'),
+            'password.min' => __('Parol kamida 8 belgidan iborat bo‘lsin.'),
+            'permissions.*.in' => __('Noma’lum ruxsat tanlangan.'),
         ]);
     }
 

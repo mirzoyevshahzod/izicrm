@@ -7,6 +7,24 @@
 
     const TOKEN_KEY = 'auth_token';
 
+    // ---------- Til (uz / ru) ----------
+    // Matnlar o'zbekcha yoziladi, ruscha tarjima PANEL_T da (resources/lang/ru.json, layout uzatadi)
+    const LANG = window.PANEL_LANG || 'uz';
+    const DICT = window.PANEL_T || {};
+
+    function t(text, args) {
+        let out = DICT[text] ?? text;
+        if (args) Object.entries(args).forEach(([k, v]) => { out = out.split(':' + k).join(v); });
+        return out;
+    }
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-lang]');
+        if (!btn || btn.dataset.lang === LANG) return;
+        document.cookie = `panel_lang=${btn.dataset.lang}; path=/; max-age=31536000; samesite=lax`;
+        location.reload();
+    });
+
     const storage = {
         get() { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } },
         set(v) { try { localStorage.setItem(TOKEN_KEY, v); } catch (e) { /* private mode */ } },
@@ -25,7 +43,7 @@
 
     class ApiError extends Error {
         constructor(status, data) {
-            super((data && data.message) || 'Server bilan bog‘lanishda xatolik');
+            super((data && data.message) || t('Server bilan bog‘lanishda xatolik'));
             this.status = status;
             this.errors = (data && data.errors) || {};
         }
@@ -48,18 +66,18 @@
         try {
             res = await fetch(url, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
         } catch (e) {
-            throw new ApiError(0, { message: 'Internet yoki server bilan aloqa yo‘q' });
+            throw new ApiError(0, { message: t('Internet yoki server bilan aloqa yo‘q') });
         }
 
         if (res.status === 401 && path !== '/login') {
             toLogin();
-            throw new ApiError(401, { message: 'Sessiya tugadi' });
+            throw new ApiError(401, { message: t('Sessiya tugadi') });
         }
 
         const data = await res.json().catch(() => null);
         if (!res.ok) {
-            if (res.status === 403) throw new ApiError(403, { message: 'Bu bo‘limga ruxsatingiz yo‘q' });
-            if (res.status === 429) throw new ApiError(429, { message: 'Juda ko‘p urinish. Birozdan keyin qayta urining.' });
+            if (res.status === 403) throw new ApiError(403, { message: t('Bu bo‘limga ruxsatingiz yo‘q') });
+            if (res.status === 429) throw new ApiError(429, { message: t('Juda ko‘p urinish. Birozdan keyin qayta urining.') });
             throw new ApiError(res.status, data);
         }
         return data;
@@ -72,7 +90,7 @@
             headers: { Authorization: 'Bearer ' + storage.get() },
         });
         if (res.status === 401) return toLogin();
-        if (!res.ok) throw new ApiError(res.status, { message: 'Faylni yuklab bo‘lmadi' });
+        if (!res.ok) throw new ApiError(res.status, { message: t('Faylni yuklab bo‘lmadi') });
         const url = URL.createObjectURL(await res.blob());
         const a = Object.assign(document.createElement('a'), { href: url, download: filename });
         document.body.appendChild(a);
@@ -98,6 +116,11 @@
         },
         longDate(v = new Date()) {
             const d = new Date(v);
+            if (LANG === 'ru') {
+                const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+                const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+                return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${days[d.getDay()]}`;
+            }
             const months = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
             const days = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
             return `${d.getDate()}-${months[d.getMonth()]}, ${d.getFullYear()} · ${days[d.getDay()]}`;
@@ -106,14 +129,14 @@
             return Number(n || 0).toLocaleString('ru-RU').replace(/,/g, ' ');
         },
         money(n) {
-            return fmt.number(Math.round(Number(n || 0))) + ' so‘m';
+            return fmt.number(Math.round(Number(n || 0))) + ' ' + t('so‘m');
         },
         minutes(total) {
             total = Number(total || 0);
             const h = Math.floor(total / 60);
             const m = total % 60;
-            if (!h) return `${m} daq`;
-            return m ? `${h} soat ${m} daq` : `${h} soat`;
+            if (!h) return t(':m daq', { m });
+            return m ? t(':h soat :m daq', { h, m }) : t(':h soat', { h });
         },
         initials(name) {
             return String(name || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || '?';
@@ -161,7 +184,7 @@
         if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(closeModal);
     });
 
-    function confirmDialog(message, { title = 'Tasdiqlang', okText = 'Ha', danger = false } = {}) {
+    function confirmDialog(message, { title = t('Tasdiqlang'), okText = t('Ha'), danger = false } = {}) {
         return new Promise((resolve) => {
             let m = document.getElementById('confirm-modal');
             if (!m) {
@@ -173,7 +196,7 @@
                         <div class="modal-head"><h3></h3></div>
                         <div class="modal-body"><p style="margin:0"></p></div>
                         <div class="modal-foot">
-                            <button class="btn secondary" data-close>Bekor qilish</button>
+                            <button class="btn secondary" data-close>${t('Bekor qilish')}</button>
                             <button class="btn" data-ok></button>
                         </div>
                     </div>`;
@@ -209,12 +232,12 @@
             container.appendChild(b);
         };
 
-        btn(icon('chevron-left'), current - 1, { disabled: current <= 1, aria: 'Oldingi' });
+        btn(icon('chevron-left'), current - 1, { disabled: current <= 1, aria: t('Oldingi') });
         list.forEach((p, i) => {
             if (i && p - list[i - 1] > 1) container.insertAdjacentHTML('beforeend', '<span class="gap">…</span>');
             btn(String(p), p, { active: p === current });
         });
-        btn(icon('chevron-right'), current + 1, { disabled: current >= last, aria: 'Keyingi' });
+        btn(icon('chevron-right'), current + 1, { disabled: current >= last, aria: t('Keyingi') });
     }
 
     function debounce(fn, ms = 350) {
@@ -288,7 +311,7 @@
 
         return api('/me').then((user) => {
             document.querySelectorAll('[data-user-name]').forEach((el) => { el.textContent = user.name; });
-            document.querySelectorAll('[data-user-role]').forEach((el) => { el.textContent = user.is_admin ? 'Administrator' : 'Xodim'; });
+            document.querySelectorAll('[data-user-role]').forEach((el) => { el.textContent = user.is_admin ? t('Administrator') : t('Xodim'); });
             document.querySelectorAll('[data-user-initials]').forEach((el) => { el.textContent = fmt.initials(user.name); });
             document.querySelectorAll('[data-permission]').forEach((el) => { el.hidden = !can(user, el.dataset.permission); });
 
@@ -297,8 +320,8 @@
                 document.querySelector('.content').innerHTML = `
                     <div class="card"><div class="state">
                         ${icon('lock')}
-                        <div class="title">Bu bo‘limga ruxsatingiz yo‘q</div>
-                        <div>Ruxsat kerak bo‘lsa, administratorga murojaat qiling.</div>
+                        <div class="title">${t('Bu bo‘limga ruxsatingiz yo‘q')}</div>
+                        <div>${t('Ruxsat kerak bo‘lsa, administratorga murojaat qiling.')}</div>
                     </div></div>`;
                 body.classList.remove('booting');
                 return new Promise(() => {}); // sahifa skripti ishlamaydi
@@ -316,7 +339,7 @@
     }
 
     window.Panel = {
-        api, download, ApiError, esc, fmt, icon, toast, openModal, closeModal,
+        t, lang: LANG, api, download, ApiError, esc, fmt, icon, toast, openModal, closeModal,
         confirm: confirmDialog, pagination, debounce, setLoading, showFieldErrors, can,
         token: storage,
         ready: null,

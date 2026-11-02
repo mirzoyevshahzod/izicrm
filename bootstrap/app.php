@@ -17,7 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'admin.bot' => \App\Http\Middleware\AdminAuthenticate::class,
+            'panel.locale' => \App\Http\Middleware\SetPanelLocale::class,
         ]);
+        // Til cookie si JS dan yoziladi, shifrlanmaydi
+        $middleware->encryptCookies(except: ['panel_lang']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

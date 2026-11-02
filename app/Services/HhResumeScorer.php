@@ -9,6 +9,7 @@ namespace App\Services;
  * ularni bir-biridan ajratish uchun: kalit so'zlar sarlavhada va oldingi lavozimlarda
  * qanchalik bor, tajriba / maosh / yosh va boshqalar qanchalik to'g'ri keladi.
  * Faqat filtrda ko'rsatilgan mezonlar hisobga olinadi (og'irliklar shularga bo'linadi).
+ * Izohlar kod + qiymat ko'rinishida saqlanadi (note, args), matnni panel o'z tilida yasaydi.
  */
 class HhResumeScorer
 {
@@ -30,21 +31,21 @@ class HhResumeScorer
     }
 
     /**
-     * @return array{0: int, 1: array<int, array{key: string, label: string, weight: int, score: float, note: string}>}
+     * @return array{0: int, 1: array<int, array{key: string, weight: int, score: float, note: string, args: array}>}
      */
     public function score(array $params, array $item): array
     {
         $details = [];
-        $add = function (string $key, string $label, int $weight, float $score, string $note) use (&$details) {
-            $details[] = ['key' => $key, 'label' => $label, 'weight' => $weight, 'score' => round(max(0, min(1, $score)), 2), 'note' => $note];
+        $add = function (string $key, int $weight, float $score, string $note, array $args = []) use (&$details) {
+            $details[] = ['key' => $key, 'weight' => $weight, 'score' => round(max(0, min(1, $score)), 2), 'note' => $note, 'args' => $args];
         };
 
         $terms = $this->terms($params['keywords'] ?? []);
         if ($terms) {
             $title = $this->normalize($item['title'] ?? '');
             $hits = array_filter($terms, fn ($t) => $this->contains($title, $t));
-            $add('title', 'Lavozim nomi', 35, count($hits) / count($terms),
-                $hits ? 'Sarlavhada: ' . implode(', ', $hits) : 'Kalit so‘zlar sarlavhada yo‘q');
+            $add('title', 35, count($hits) / count($terms),
+                $hits ? 'title_hits' : 'title_none', ['terms' => implode(', ', $hits)]);
 
             $jobs = array_slice($item['experience'] ?? [], 0, 5);
             $positions = $this->normalize(implode(' | ', array_map(
@@ -53,56 +54,56 @@ class HhResumeScorer
             $recent = $this->normalize(($jobs[0]['position'] ?? '') . ' ' . ($jobs[0]['company'] ?? ''));
             $posHits = array_filter($terms, fn ($t) => $this->contains($positions, $t));
             $recentHit = (bool) array_filter($terms, fn ($t) => $this->contains($recent, $t));
-            $add('positions', 'Oldingi lavozimlar', 20,
+            $add('positions', 20,
                 ($posHits ? count($posHits) / count($terms) * 0.7 : 0) + ($recentHit ? 0.3 : 0),
-                $posHits ? ($recentHit ? 'Oxirgi ish joyida ham mos' : 'Avvalgi ish joylarida mos') : 'Ish tajribasida uchramadi');
+                $posHits ? ($recentHit ? 'pos_recent' : 'pos_earlier') : 'pos_none');
         }
 
         $months = $item['total_experience']['months'] ?? null;
         if (!empty($params['experience'])) {
             if ($months === null) {
-                $add('experience', 'Tajriba', 15, 0.5, 'Tajriba ko‘rsatilmagan');
+                $add('experience', 15, 0.5, 'unknown');
             } else {
-                $add('experience', 'Tajriba', 15, $this->experienceScore((int) $months, $params['experience']), $this->months((int) $months));
+                $add('experience', 15, $this->experienceScore((int) $months, $params['experience']), 'months', ['months' => (int) $months]);
             }
         }
 
         if (isset($params['salary_from']) || isset($params['salary_to'])) {
-            $add('salary', 'Maosh', 10, ...$this->salaryScore($params, $item['salary'] ?? null));
+            $add('salary', 10, ...$this->salaryScore($params, $item['salary'] ?? null));
         }
 
         if (isset($params['age_from']) || isset($params['age_to'])) {
             $age = $item['age'] ?? null;
             if ($age === null) {
-                $add('age', 'Yosh', 5, 0.5, 'Yosh ko‘rsatilmagan');
+                $add('age', 5, 0.5, 'unknown');
             } else {
                 $in = (!isset($params['age_from']) || $age >= $params['age_from']) && (!isset($params['age_to']) || $age <= $params['age_to']);
-                $add('age', 'Yosh', 5, $in ? 1 : 0.2, $age . ' yosh');
+                $add('age', 5, $in ? 1 : 0.2, 'age', ['age' => $age]);
             }
         }
 
         if (!empty($params['education_level'])) {
             $level = $item['education']['level']['id'] ?? null;
-            $name = $item['education']['level']['name'] ?? 'ko‘rsatilmagan';
             if ($level === null) {
-                $add('education', 'Ta’lim', 5, 0.5, 'Ta’lim ko‘rsatilmagan');
+                $add('education', 5, 0.5, 'unknown');
             } else {
                 $min = min(array_map(fn ($l) => self::EDUCATION_RANK[$l] ?? 0, $params['education_level']));
-                $add('education', 'Ta’lim', 5, in_array($level, $params['education_level'], true) || (self::EDUCATION_RANK[$level] ?? 0) >= $min ? 1 : 0.3, $name);
+                $add('education', 5, in_array($level, $params['education_level'], true) || (self::EDUCATION_RANK[$level] ?? 0) >= $min ? 1 : 0.3,
+                    'education', ['level' => $level]);
             }
         }
 
         if (!empty($params['area'])) {
             $areaId = (string) ($item['area']['id'] ?? '');
-            $add('area', 'Hudud', 5, in_array($areaId, $params['area'], true) ? 1 : 0.5,
-                ($item['area']['name'] ?? '—') . (in_array($areaId, $params['area'], true) ? '' : ' (ko‘chib o‘tishga tayyor)'));
+            $inArea = in_array($areaId, $params['area'], true);
+            $add('area', 5, $inArea ? 1 : 0.5, $inArea ? 'area' : 'area_relocate', ['area_id' => $areaId, 'name' => $item['area']['name'] ?? '—']);
         }
 
         $updated = isset($item['updated_at']) ? strtotime($item['updated_at']) : null;
         $days = $updated ? (int) floor((time() - $updated) / 86400) : null;
-        $add('fresh', 'Yangilangan', 5,
+        $add('fresh', 5,
             $days === null ? 0.3 : ($days <= 7 ? 1 : ($days <= 30 ? 0.6 : 0.3)),
-            $days === null ? '—' : ($days === 0 ? 'Bugun' : $days . ' kun oldin'));
+            $days === null ? 'unknown' : 'days', ['days' => $days]);
 
         $total = array_sum(array_column($details, 'weight'));
         $score = $total ? (int) round(array_sum(array_map(fn ($d) => $d['weight'] * $d['score'], $details)) / $total * 100) : 0;
@@ -125,27 +126,27 @@ class HhResumeScorer
     private function salaryScore(array $params, ?array $salary): array
     {
         if (empty($salary['amount'])) {
-            return [0.5, 'Maosh ko‘rsatilmagan'];
+            return [0.5, 'unknown'];
         }
         $currency = $params['currency'] ?? 'UZS';
         $wanted = $currency === ($salary['currency'] ?? null)
             ? (float) $salary['amount']
             : $this->convert((float) $salary['amount'], $salary['currency'] ?? '', $currency);
-        $note = number_format((float) $salary['amount'], 0, '.', ' ') . ' ' . ($salary['currency'] ?? '');
+        $args = ['amount' => (float) $salary['amount'], 'currency' => $salary['currency'] ?? ''];
         if ($wanted === null) {
-            return [0.5, $note];
+            return [0.5, 'salary', $args];
         }
 
         $to = $params['salary_to'] ?? null;
         $from = $params['salary_from'] ?? null;
         if ($to && $wanted > $to) {
-            return [$wanted <= $to * 1.2 ? 0.5 : 0.1, $note . ' — byudjetdan yuqori'];
+            return [$wanted <= $to * 1.2 ? 0.5 : 0.1, 'salary_over', $args];
         }
         if ($from && $wanted < $from * 0.7) {
-            return [0.6, $note . ' — kutilganidan past'];
+            return [0.6, 'salary_low', $args];
         }
 
-        return [1, $note];
+        return [1, 'salary', $args];
     }
 
     private function convert(float $amount, string $from, string $to): ?float
@@ -213,13 +214,5 @@ class HhResumeScorer
         $stem = $len > 5 ? mb_substr($term, 0, $len - 2) : $term;
 
         return str_contains($haystack, $stem);
-    }
-
-    private function months(int $months): string
-    {
-        $y = intdiv($months, 12);
-        $m = $months % 12;
-
-        return trim(($y ? "$y yil " : '') . ($m ? "$m oy" : '')) ?: '1 oydan kam';
     }
 }

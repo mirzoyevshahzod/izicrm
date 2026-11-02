@@ -234,11 +234,17 @@ class HhService
         return $this->get('/resumes', $params);
     }
 
-    // ---- Ochiq spravochniklar (token shart emas), o'zbek tilida, 1 kun keshda ----
+    // ---- Ochiq spravochniklar (token shart emas), panel tilida (uz/ru), 1 kun keshda ----
+
+    /** hh locale: panel ruscha bo'lsa RU, aks holda UZ */
+    private function hhLocale(): string
+    {
+        return app()->getLocale() === 'ru' ? 'RU' : 'UZ';
+    }
 
     public function publicGet(string $path, array $query = []): array
     {
-        $query += ['host' => config('services.hh.host'), 'locale' => 'UZ'];
+        $query += ['host' => config('services.hh.host'), 'locale' => $this->hhLocale()];
         $response = $this->http()->get($path . '?' . self::buildQuery($query));
 
         if ($response->failed()) {
@@ -250,13 +256,13 @@ class HhService
 
     public function dictionaries(): array
     {
-        return Cache::remember('hh:dict:dictionaries', now()->addDay(), fn () => $this->publicGet('/dictionaries'));
+        return Cache::remember('hh:dict:dictionaries:' . $this->hhLocale(), now()->addDay(), fn () => $this->publicGet('/dictionaries'));
     }
 
     /** O'zbekiston shahar va tumanlari: [['id' => '2759', 'name' => 'Toshkent'], ...] */
     public function uzbekistanAreas(): array
     {
-        return Cache::remember('hh:dict:areas_uz', now()->addDay(), function () {
+        return Cache::remember('hh:dict:areas_uz:' . $this->hhLocale(), now()->addDay(), function () {
             $root = $this->publicGet('/areas/' . \App\Models\HhSearch::UZBEKISTAN_AREA);
             $flat = [];
             $walk = function (array $areas) use (&$walk, &$flat) {
@@ -274,7 +280,7 @@ class HhService
 
     public function professionalRoles(): array
     {
-        return Cache::remember('hh:dict:roles', now()->addDay(), function () {
+        return Cache::remember('hh:dict:roles:' . $this->hhLocale(), now()->addDay(), function () {
             return array_map(fn ($c) => [
                 'name' => $c['name'],
                 'roles' => array_map(fn ($r) => ['id' => (string) $r['id'], 'name' => $r['name']], $c['roles']),
@@ -284,7 +290,7 @@ class HhService
 
     public function languages(): array
     {
-        return Cache::remember('hh:dict:languages', now()->addDay(), fn () => array_map(
+        return Cache::remember('hh:dict:languages:' . $this->hhLocale(), now()->addDay(), fn () => array_map(
             fn ($l) => ['id' => $l['id'], 'name' => $l['name']],
             $this->publicGet('/languages')
         ));
@@ -297,7 +303,7 @@ class HhService
             return [];
         }
 
-        return Cache::remember('hh:skill:' . md5(mb_strtolower($text)), now()->addDay(), fn () => array_map(
+        return Cache::remember('hh:skill:' . $this->hhLocale() . ':' . md5(mb_strtolower($text)), now()->addDay(), fn () => array_map(
             fn ($i) => ['id' => (string) $i['id'], 'text' => $i['text']],
             $this->publicGet('/suggests/skill_set', ['text' => $text])['items'] ?? []
         ));

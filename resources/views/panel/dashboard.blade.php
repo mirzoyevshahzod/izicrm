@@ -1,11 +1,11 @@
 @extends('panel.layout')
 
-@section('title', 'Bosh sahifa')
+@section('title', __('Bosh sahifa'))
 
 @section('content')
     <div class="page-head">
         <div>
-            <h2>Assalomu alaykum, <span id="greet-name"></span></h2>
+            <h2>{{ __('Assalomu alaykum') }}, <span id="greet-name"></span></h2>
             <p id="today"></p>
         </div>
     </div>
@@ -13,32 +13,32 @@
     <div class="grid stats" id="stats"></div>
 
     <div class="card">
-        <div class="card-header"><h2>Bo‘limlar</h2></div>
+        <div class="card-header"><h2>{{ __('Bo‘limlar') }}</h2></div>
         <div class="card-body">
             <div class="grid quick-links">
                 <a class="card quick-link" href="{{ route('panel.attendance', [], false) }}" data-permission="attendance.view" hidden>
                     <span class="stat-icon amber"><svg class="icon"><use href="#i-clock"></use></svg></span>
-                    <div><div class="title">Davomat</div><div class="desc">Kechikishlar, sabablar, Excel</div></div>
+                    <div><div class="title">{{ __('Davomat') }}</div><div class="desc">{{ __('Kechikishlar, sabablar, Excel') }}</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
                 <a class="card quick-link" href="{{ route('panel.debts', [], false) }}" data-permission="debts.view" hidden>
                     <span class="stat-icon red"><svg class="icon"><use href="#i-wallet"></use></svg></span>
-                    <div><div class="title">Qarzdorlik</div><div class="desc">Qarzlar va xodim izohlari</div></div>
+                    <div><div class="title">{{ __('Qarzdorlik') }}</div><div class="desc">{{ __('Qarzlar va xodim izohlari') }}</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
                 <a class="card quick-link" href="{{ route('panel.hh', [], false) }}" data-permission="hh.view" hidden>
                     <span class="stat-icon"><svg class="icon"><use href="#i-briefcase"></use></svg></span>
-                    <div><div class="title">HH nomzodlar</div><div class="desc">hh.uz dan mos rezyumelar</div></div>
+                    <div><div class="title">{{ __('HH nomzodlar') }}</div><div class="desc">{{ __('hh.uz dan mos rezyumelar') }}</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
                 <a class="card quick-link" href="{{ route('panel.users', [], false) }}" data-permission="users.manage" hidden>
                     <span class="stat-icon"><svg class="icon"><use href="#i-users"></use></svg></span>
-                    <div><div class="title">Foydalanuvchilar</div><div class="desc">Panelga kirish va ruxsatlar</div></div>
+                    <div><div class="title">{{ __('Foydalanuvchilar') }}</div><div class="desc">{{ __('Panelga kirish va ruxsatlar') }}</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
                 <a class="card quick-link" href="{{ route('panel.profile', [], false) }}">
                     <span class="stat-icon green"><svg class="icon"><use href="#i-user"></use></svg></span>
-                    <div><div class="title">Profil</div><div class="desc">Ma’lumotlar va parol</div></div>
+                    <div><div class="title">{{ __('Profil') }}</div><div class="desc">{{ __('Ma’lumotlar va parol') }}</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
             </div>
@@ -49,7 +49,7 @@
 @push('scripts')
 <script>
 Panel.ready.then(async (user) => {
-    const { api, fmt, esc, icon } = Panel;
+    const { api, fmt, esc, icon, t } = Panel;
     document.getElementById('greet-name').textContent = user.name.split(' ')[0];
     document.getElementById('today').textContent = fmt.longDate();
 
@@ -68,18 +68,18 @@ Panel.ready.then(async (user) => {
         const s = await api('/dashboard');
         let html = '';
         if (s.attendance) {
-            html += card('clock', 'amber', 'Bugun kechikkanlar', fmt.number(s.attendance.today),
-                s.attendance.today ? 'Jami ' + fmt.minutes(s.attendance.today_minutes) : 'Hozircha kechikish yo‘q');
-            html += card('calendar', '', 'Shu oyda kechikishlar', fmt.number(s.attendance.month));
+            html += card('clock', 'amber', t('Bugun kechikkanlar'), fmt.number(s.attendance.today),
+                s.attendance.today ? t('Jami :v', { v: fmt.minutes(s.attendance.today_minutes) }) : t('Hozircha kechikish yo‘q'));
+            html += card('calendar', '', t('Shu oyda kechikishlar'), fmt.number(s.attendance.month));
         }
         if (s.debts) {
-            html += card('wallet', 'red', 'Qarzdorlik summasi', fmt.money(s.debts.total), fmt.number(s.debts.count) + ' ta yozuv');
+            html += card('wallet', 'red', t('Qarzdorlik summasi'), fmt.money(s.debts.total), t(':n ta yozuv', { n: fmt.number(s.debts.count) }));
         }
         if (s.hh) {
-            html += card('briefcase', '', 'Yangi nomzodlar (hh.uz)', fmt.number(s.hh.new), fmt.number(s.hh.selected) + ' ta tanlangan');
+            html += card('briefcase', '', t('Yangi nomzodlar (hh.uz)'), fmt.number(s.hh.new), t(':n ta tanlangan', { n: fmt.number(s.hh.selected) }));
         }
         if (s.users) {
-            html += card('users', 'green', 'Panel foydalanuvchilari', fmt.number(s.users.count));
+            html += card('users', 'green', t('Panel foydalanuvchilari'), fmt.number(s.users.count));
         }
         box.innerHTML = html;
         box.hidden = !html;

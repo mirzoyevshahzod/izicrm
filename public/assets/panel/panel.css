@@ -473,3 +473,10 @@ audio { width: 100%; }
 
 .notice { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius); background: var(--warning-soft); color: var(--warning); margin-bottom: 16px; }
 .notice .icon { margin-top: 2px; }
+
+/* ---------- Til almashtirgich ---------- */
+.lang-switch { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+.lang-switch button { height: 28px; min-width: 36px; padding: 0 10px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .03em; cursor: pointer; }
+.lang-switch button:hover { color: var(--text); }
+.lang-switch button.active { background: var(--primary); color: #fff; }
+.auth-theme { display: flex; gap: 8px; align-items: center; }

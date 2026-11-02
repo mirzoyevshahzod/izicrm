@@ -51,10 +51,10 @@ Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class,
 Route::post('/telegram/mobile-app-webhook', [TelegramMobileAppBotController::class, 'mobileApp']);
 
 
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware(['throttle:10,1', 'panel.locale']);
 
 // Panel API — token (sanctum) bilan, bo'limlar spatie ruxsatlari bilan
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'panel.locale'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/password', [AuthController::class, 'changePassword']);

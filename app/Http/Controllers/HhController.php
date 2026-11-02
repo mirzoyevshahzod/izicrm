@@ -107,7 +107,7 @@ class HhController extends Controller
     {
         $search->delete();
 
-        return response()->json(['message' => 'Qidiruv o‘chirildi.']);
+        return response()->json(['message' => __('Qidiruv o‘chirildi.')]);
     }
 
     /** Qo'lda ishga tushirish (odatda har soatda o'zi ishlaydi) */
@@ -120,7 +120,7 @@ class HhController extends Controller
         } catch (\Throwable $e) {
             $search->forceFill(['last_error' => mb_substr($e->getMessage(), 0, 1000)])->save();
 
-            return response()->json(['message' => 'hh.uz dan olib bo‘lmadi: ' . $e->getMessage()], 502);
+            return response()->json(['message' => __('hh.uz dan olib bo‘lmadi: :error', ['error' => $e->getMessage()])], 502);
         }
 
         return response()->json($result);
@@ -171,7 +171,7 @@ class HhController extends Controller
             'is_active' => 'boolean',
             'params' => 'required|array',
         ], [
-            'name.required' => 'Qidiruvga nom bering.',
+            'name.required' => __('Qidiruvga nom bering.'),
         ]);
         $data['params'] = HhSearch::normalizeParams($data['params']);
 
@@ -192,7 +192,10 @@ class HhController extends Controller
             'resume' => [
                 'title' => $resume->title,
                 'age' => $resume->age,
+                // id lar bo'yicha panel o'z tilidagi nomni oladi, name — zaxira
+                'gender_id' => $resume->gender,
                 'gender' => $d['gender']['name'] ?? null,
+                'area_id' => $resume->area_id,
                 'area' => $resume->area_name,
                 'salary' => $resume->salary_amount ? ['amount' => $resume->salary_amount, 'currency' => $resume->salary_currency] : null,
                 'experience_months' => $resume->experience_months,
@@ -203,11 +206,13 @@ class HhController extends Controller
                     'end' => $j['end'] ?? null,
                 ], array_slice($d['experience'] ?? [], 0, 3)),
                 'education' => [
+                    'level_id' => $resume->education_level,
                     'level' => $d['education']['level']['name'] ?? null,
                     'place' => $d['education']['primary'][0]['name'] ?? null,
                     'result' => $d['education']['primary'][0]['result'] ?? null,
                     'year' => $d['education']['primary'][0]['year'] ?? null,
                 ],
+                'job_search_status_id' => $d['job_search_status']['id'] ?? null,
                 'job_search_status' => $d['job_search_status']['name'] ?? null,
                 'updated_at' => $resume->hh_updated_at,
                 'url' => $resume->alternate_url,

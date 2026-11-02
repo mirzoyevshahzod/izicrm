@@ -21,7 +21,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Email yoki parol noto‘g‘ri.'], 401);
+            return response()->json(['message' => __('Email yoki parol noto‘g‘ri.')], 401);
         }
 
         return response()->json([
@@ -52,9 +52,9 @@ class AuthController extends Controller
             'current_password' => 'required|current_password:sanctum',
             'password' => 'required|string|min:8|confirmed',
         ], [
-            'current_password.current_password' => 'Joriy parol noto‘g‘ri.',
-            'password.min' => 'Yangi parol kamida 8 belgidan iborat bo‘lsin.',
-            'password.confirmed' => 'Parollar mos kelmadi.',
+            'current_password.current_password' => __('Joriy parol noto‘g‘ri.'),
+            'password.min' => __('Yangi parol kamida 8 belgidan iborat bo‘lsin.'),
+            'password.confirmed' => __('Parollar mos kelmadi.'),
         ]);
 
         $user = $request->user();
@@ -64,7 +64,7 @@ class AuthController extends Controller
         // Boshqa qurilmalardagi sessiyalarni yopamiz, joriysi qoladi
         $user->tokens()->where('id', '!=', $user->currentAccessToken()->id)->delete();
 
-        return response()->json(['message' => 'Parol yangilandi.']);
+        return response()->json(['message' => __('Parol yangilandi.')]);
     }
 
     public static function userPayload(User $user): array

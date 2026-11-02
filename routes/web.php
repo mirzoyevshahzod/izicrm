@@ -8,10 +8,10 @@ Route::get('/oferta', function () {
 });
 
 // Panel — sahifalar ochiq, ma'lumot /api orqali token va ruxsat bilan keladi (public/assets/panel/panel.js)
-Route::view('/login', 'panel.login')->name('login');
+Route::view('/login', 'panel.login')->middleware('panel.locale')->name('login');
 Route::redirect('/', '/panel');
 
-Route::prefix('panel')->group(function () {
+Route::prefix('panel')->middleware('panel.locale')->group(function () {
     Route::view('/', 'panel.dashboard')->name('panel');
     Route::view('/attendance', 'panel.attendance')->name('panel.attendance');
     Route::view('/debts', 'panel.debts')->name('panel.debts');
