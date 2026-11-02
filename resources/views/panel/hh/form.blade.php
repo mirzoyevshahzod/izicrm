@@ -136,6 +136,19 @@
             </div>
 
             <div class="form-section">
+                <div class="label">{{ __('Telegram xabarnoma') }}<span class="hint">{{ __('Yangi nomzodlar HH botidan HR larga yuboriladi') }}</span></div>
+                <div class="controls">
+                    <label class="switch">
+                        <input type="checkbox" name="notify" checked><span class="track"></span> <span>{{ __('Telegram’ga yuborish') }}</span>
+                    </label>
+                    <div class="row">
+                        <input class="input narrow" name="notify_min_score" type="number" min="0" max="100" value="70">
+                        <span class="muted">{{ __('% va undan yuqori moslikdagi nomzodlar') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <div class="label">{{ __('Qo‘shimcha') }}</div>
                 <div class="controls">
                     <label class="inline-check"><input type="checkbox" name="label" value="only_with_photo"> {{ __('Faqat rasmli rezyumelar') }}</label>
@@ -388,8 +401,9 @@ Panel.ready.then(async () => {
             if (seq === previewSeq) foundBox.innerHTML = `<span style="color:var(--danger)">${esc(e.message)}</span>`;
         }
     }, 600);
-    form.addEventListener('input', (e) => { if (e.target.id !== 'skill-input' && e.target.name !== 'name') refreshPreview(); });
-    form.addEventListener('change', (e) => { if (e.target.name !== 'name' && e.target.name !== 'is_active') refreshPreview(); });
+    const noPreview = ['name', 'is_active', 'notify', 'notify_min_score'];
+    form.addEventListener('input', (e) => { if (e.target.id !== 'skill-input' && !noPreview.includes(e.target.name)) refreshPreview(); });
+    form.addEventListener('change', (e) => { if (!noPreview.includes(e.target.name)) refreshPreview(); });
 
     // ---------- Tahrirlash rejimi ----------
     if (editId) {
@@ -399,6 +413,8 @@ Panel.ready.then(async () => {
             const p = s.params;
             form.elements.name.value = s.name;
             form.elements.is_active.checked = s.is_active;
+            form.elements.notify.checked = s.notify;
+            form.elements.notify_min_score.value = s.notify_min_score;
             (p.keywords || []).forEach(addKeyword);
             (p.language || []).forEach(addLanguage);
             state.area = p.area || [];
@@ -432,7 +448,13 @@ Panel.ready.then(async () => {
         const btn = document.getElementById('save');
         setLoading(btn, true);
         try {
-            const body = { name: form.elements.name.value.trim(), is_active: form.elements.is_active.checked, params: collect() };
+            const body = {
+                name: form.elements.name.value.trim(),
+                is_active: form.elements.is_active.checked,
+                notify: form.elements.notify.checked,
+                notify_min_score: Math.min(100, Math.max(0, Number(form.elements.notify_min_score.value) || 70)),
+                params: collect(),
+            };
             const s = await api(editId ? `/hh/searches/${editId}` : '/hh/searches', { method: editId ? 'PUT' : 'POST', body });
 
             // Yangi yoki o'zgargan filtr — darhol birinchi natijalarni olamiz

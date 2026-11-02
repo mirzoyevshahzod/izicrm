@@ -169,6 +169,8 @@ class HhController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'is_active' => 'boolean',
+            'notify' => 'boolean',
+            'notify_min_score' => 'integer|min:0|max:100',
             'params' => 'required|array',
         ], [
             'name.required' => __('Qidiruvga nom bering.'),

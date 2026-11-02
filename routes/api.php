@@ -5,6 +5,7 @@ use App\Http\Controllers\Attendance\EGSAttendanceBotController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HhBotController;
 use App\Http\Controllers\HhController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DebtController;
@@ -49,6 +50,8 @@ Route::post('/telegram/postix-webhook', [TelegramPostixBotController::class, 'po
 Route::post('/candidate/telegram/webhook', [TelegramCandidateBotController::class, 'candidate']);
 Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class, 'express']);
 Route::post('/telegram/mobile-app-webhook', [TelegramMobileAppBotController::class, 'mobileApp']);
+// HH bot (secret_token bilan himoyalangan)
+Route::post('/telegram/hh-webhook', [HhBotController::class, 'webhook']);
 
 
 Route::post('/login', [AuthController::class, 'login'])->middleware(['throttle:10,1', 'panel.locale']);
@@ -58,6 +61,9 @@ Route::middleware(['auth:sanctum', 'panel.locale'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/password', [AuthController::class, 'changePassword']);
+    Route::get('/me/telegram', [HhBotController::class, 'myTelegram']);
+    Route::post('/me/telegram/link', [HhBotController::class, 'linkTelegram']);
+    Route::delete('/me/telegram', [HhBotController::class, 'unlinkTelegram']);
     Route::get('/dashboard', DashboardController::class);
 
     Route::middleware('permission:attendance.view')->group(function () {
@@ -81,6 +87,10 @@ Route::middleware(['auth:sanctum', 'panel.locale'])->group(function () {
         Route::post('/searches/{search}/run', [HhController::class, 'run']);
         Route::get('/searches/{search}/candidates', [HhController::class, 'candidates']);
         Route::patch('/candidates/{candidate}', [HhController::class, 'updateCandidate']);
+        Route::get('/bot/chats', [HhBotController::class, 'chats']);
+        Route::patch('/bot/chats/{chat}', [HhBotController::class, 'updateChat']);
+        Route::delete('/bot/chats/{chat}', [HhBotController::class, 'destroyChat']);
+        Route::post('/bot/test', [HhBotController::class, 'test']);
     });
 
     Route::middleware('permission:users.manage')->group(function () {

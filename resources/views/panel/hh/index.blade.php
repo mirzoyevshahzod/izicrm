@@ -14,6 +14,14 @@
 
     <div id="notice"></div>
     <div class="search-grid" id="list"></div>
+
+    <div class="card" id="bot-card" style="margin-top:24px" hidden>
+        <div class="card-header">
+            <h2>{{ __('Telegram xabarnomalar') }}</h2>
+            <button class="btn secondary sm" id="bot-test"><svg class="icon"><use href="#i-check"></use></svg> {{ __('Sinov xabari') }}</button>
+        </div>
+        <div class="card-body" id="bot-body"></div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -141,7 +149,78 @@ Panel.ready.then(async () => {
         }
     });
 
+    // ---------- Telegram: kim xabar oladi ----------
+    const botBody = document.getElementById('bot-body');
+    let botChats = [];
+
+    async function loadBot() {
+        let res;
+        try { res = await api('/hh/bot/chats'); } catch (e) { return; }
+        document.getElementById('bot-card').hidden = false;
+        document.getElementById('bot-test').hidden = !res.configured;
+        if (!res.configured) {
+            botBody.innerHTML = `<div class="muted">${t('Bot sozlanmagan: serverdagi .env ga TELEGRAM_HH_BOT_TOKEN qo‘shing.')}</div>`;
+            return;
+        }
+        botChats = res.chats;
+        const bot = res.bot ? `<a href="https://t.me/${esc(res.bot)}" target="_blank" rel="noopener">@${esc(res.bot)}</a>` : 'HH bot';
+        const rows = botChats.map((c, i) => `
+            <div class="row" style="justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border)">
+                <div class="user-cell">
+                    <span class="avatar">${icon(c.type === 'private' ? 'user' : 'users')}</span>
+                    <div>
+                        <div class="cell-main">${esc(c.type === 'private' ? (c.user?.name || c.title || '—') : (c.title || t('Guruh')))}</div>
+                        <div class="cell-sub">${c.type === 'private'
+                            ? t('Shaxsiy chat') + (c.username ? ' · @' + esc(c.username) : '')
+                            : t('Guruh')}</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <label class="switch" title="${t('Xabar yuborish')}"><input type="checkbox" data-chat-toggle="${i}" ${c.is_active ? 'checked' : ''}><span class="track"></span></label>
+                    <button class="btn ghost icon-only" data-chat-delete="${i}" aria-label="${t('O‘chirish')}" title="${t('O‘chirish')}">${icon('trash')}</button>
+                </div>
+            </div>`).join('');
+        botBody.innerHTML = (rows || `<div class="muted" style="padding-bottom:12px">${t('Hali hech kim ulanmagan.')}</div>`) + `
+            <div class="cell-sub" style="margin-top:14px; display:grid; gap:4px">
+                <div>• ${t('HR lar: panelda Profil → Telegram’ni ulash.')}</div>
+                <div>• ${t('Guruh: :bot ni guruhga qo‘shing, u shu ro‘yxatda paydo bo‘ladi — keyin yoqing.', { bot })}</div>
+            </div>`;
+    }
+
+    botBody.addEventListener('change', async (e) => {
+        const el = e.target.closest('[data-chat-toggle]');
+        if (!el) return;
+        const c = botChats[+el.dataset.chatToggle];
+        try {
+            await api(`/hh/bot/chats/${c.id}`, { method: 'PATCH', body: { is_active: el.checked } });
+            c.is_active = el.checked;
+        } catch (err) {
+            el.checked = !el.checked;
+            toast(err.message, 'error');
+        }
+    });
+    botBody.addEventListener('click', async (e) => {
+        const del = e.target.closest('[data-chat-delete]');
+        if (!del) return;
+        const c = botChats[+del.dataset.chatDelete];
+        if (!await confirm(t('Bu chatga xabarlar boshqa yuborilmaydi.'), { title: t('Chatni o‘chirish'), okText: t('O‘chirish'), danger: true })) return;
+        try {
+            await api(`/hh/bot/chats/${c.id}`, { method: 'DELETE' });
+            loadBot();
+        } catch (err) { toast(err.message, 'error'); }
+    });
+    document.getElementById('bot-test').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        setLoading(btn, true);
+        try {
+            const r = await api('/hh/bot/test', { method: 'POST' });
+            toast(t('Sinov xabari yuborildi: :sent / :total', { sent: r.sent, total: r.total }), r.sent ? 'success' : 'error');
+        } catch (err) { toast(err.message, 'error'); }
+        finally { setLoading(btn, false); }
+    });
+
     load();
+    loadBot();
 });
 </script>
 @endpush

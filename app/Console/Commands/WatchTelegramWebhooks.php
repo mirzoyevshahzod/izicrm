@@ -59,7 +59,14 @@ class WatchTelegramWebhooks extends Command
             }
 
             // drop_pending_updates yo'q — uzilish paytida kelgan xabarlar yo'qolmasin
-            $response = Http::timeout(15)->asForm()->post("$api/setWebhook", ['url' => $expected]);
+            $params = ['url' => $expected];
+            if (!empty($bot['secret'])) {
+                $params['secret_token'] = $bot['secret'];
+            }
+            if (!empty($bot['allowed_updates'])) {
+                $params['allowed_updates'] = json_encode($bot['allowed_updates']);
+            }
+            $response = Http::timeout(15)->asForm()->post("$api/setWebhook", $params);
 
             if ($response->json('ok')) {
                 $this->info("[$name] webhook qayta o'rnatildi");

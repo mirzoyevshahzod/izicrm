@@ -11,6 +11,9 @@
 
 return [
 
+    // Panel manzili (bot xabarlaridagi havolalar uchun). izicrm.uz hozir Kerio orqali ochilmaydi.
+    'url' => env('PANEL_URL', 'https://webhook.izicrm.uz'),
+
     'permissions' => [
         'attendance.view' => 'Davomat',
         'debts.view' => 'Qarzdorlik',

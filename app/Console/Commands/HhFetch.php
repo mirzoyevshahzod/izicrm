@@ -28,7 +28,7 @@ class HhFetch extends Command
         foreach ($searches as $search) {
             try {
                 $r = $fetcher->run($search);
-                $this->info("[#{$search->id} {$search->name}] hh da: {$r['found']}, olindi: {$r['fetched']}, yangi: {$r['new']}");
+                $this->info("[#{$search->id} {$search->name}] hh da: {$r['found']}, olindi: {$r['fetched']}, yangi: {$r['new']}, botga: {$r['notified']}");
             } catch (\Throwable $e) {
                 $this->error("[#{$search->id} {$search->name}] {$e->getMessage()}");
                 // Har soatda takror yubormaslik uchun faqat birinchi xatoda xabar beramiz

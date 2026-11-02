@@ -38,12 +38,15 @@ class HhSearch extends Model
         'name',
         'params',
         'is_active',
+        'notify',
+        'notify_min_score',
         'created_by',
     ];
 
     protected $casts = [
         'params' => 'array',
         'is_active' => 'boolean',
+        'notify' => 'boolean',
         'last_run_at' => 'datetime',
     ];
 

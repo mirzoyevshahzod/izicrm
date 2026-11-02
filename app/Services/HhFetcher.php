@@ -21,16 +21,18 @@ class HhFetcher
     /** Birinchi ishga tushirishda shuncha kunlik rezyumelar olinadi */
     private const FIRST_RUN_DAYS = 30;
 
-    public function __construct(private HhService $hh)
+    public function __construct(private HhService $hh, private HhTelegramBot $bot)
     {
     }
 
     /**
-     * @return array{found: int, fetched: int, new: int}
+     * @return array{found: int, fetched: int, new: int, notified: int}
      */
     public function run(HhSearch $search): array
     {
         $startedAt = now();
+        // Birinchi ishga tushirishda oxirgi 30 kun olinadi — ular faqat panelga, botga emas
+        $firstRun = $search->last_run_at === null;
         // Oldingi ishga tushirish bilan 1 soat ustma-ust — chegaradagi rezyumelar tushib qolmasin
         $from = $search->last_run_at
             ? $search->last_run_at->copy()->subHour()
@@ -47,7 +49,7 @@ class HhFetcher
 
         $found = 0;
         $fetched = 0;
-        $new = 0;
+        $newIds = [];
 
         for ($page = 0; $page < self::MAX_PAGES; $page++) {
             $result = $this->hh->searchResumes($query + ['page' => $page]);
@@ -58,7 +60,9 @@ class HhFetcher
                     continue;
                 }
                 $fetched++;
-                $new += $this->store($search, $params, $item, $scorer) ? 1 : 0;
+                if ($id = $this->store($search, $params, $item, $scorer)) {
+                    $newIds[] = $id;
+                }
             }
 
             if ($page + 1 >= (int) ($result['pages'] ?? 0)) {
@@ -72,11 +76,20 @@ class HhFetcher
             'last_error' => null,
         ])->save();
 
-        return compact('found', 'fetched', 'new');
+        $notified = 0;
+        if (!$firstRun) {
+            try {
+                $notified = $this->bot->notify($search, $newIds);
+            } catch (\Throwable $e) {
+                MonitorNotifier::send("HH bot [#{$search->id} {$search->name}] yuborishda xato: " . $e->getMessage());
+            }
+        }
+
+        return ['found' => $found, 'fetched' => $fetched, 'new' => count($newIds), 'notified' => $notified];
     }
 
-    /** @return bool yangi qo'shildimi */
-    private function store(HhSearch $search, array $params, array $item, HhResumeScorer $scorer): bool
+    /** @return int|null yangi qo'shilgan bo'lsa hh_search_resumes.id */
+    private function store(HhSearch $search, array $params, array $item, HhResumeScorer $scorer): ?int
     {
         $salary = $item['salary'] ?? null;
         $amount = isset($salary['amount']) ? (float) $salary['amount'] : null;
@@ -105,7 +118,7 @@ class HhFetcher
             $link->fill(['score' => $score, 'score_details' => $details]);
             $link->save();
 
-            return $isNew;
+            return $isNew ? $link->id : null;
         });
     }
 

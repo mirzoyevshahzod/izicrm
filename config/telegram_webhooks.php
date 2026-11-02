@@ -60,6 +60,13 @@ return [
             'token' => env('TELEGRAM_EXPRESS_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram/express-webhook',
         ],
+        'izicrm_hh_bot' => [
+            'token' => env('TELEGRAM_HH_BOT_TOKEN'),
+            'url'   => 'https://webhook.izicrm.uz/api/telegram/hh-webhook',
+            // Telegram har so'rovda X-Telegram-Bot-Api-Secret-Token sarlavhasida qaytaradi
+            'secret' => env('TELEGRAM_HH_BOT_SECRET'),
+            'allowed_updates' => ['message', 'callback_query', 'my_chat_member'],
+        ],
     ],
 
 ];
