@@ -1,4 +1,5 @@
-@php($asset = fn ($path) => asset($path) . '?v=' . @filemtime(public_path($path)))
+{{-- Nisbiy manzillar: sayt webhook.izicrm.uz orqali ochilganda Laravel Host'ni izicrm.uz deb ko'radi --}}
+@php($asset = fn ($path) => '/' . $path . '?v=' . @filemtime(public_path($path)))
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -16,22 +17,22 @@
         <div class="brand"><span class="brand-mark">iz</span> IziCRM</div>
 
         <nav class="nav" aria-label="Asosiy menyu">
-            <a href="{{ route('panel') }}" class="nav-item @if(request()->routeIs('panel')) active @endif">
+            <a href="{{ route('panel', [], false) }}" class="nav-item @if(request()->routeIs('panel')) active @endif">
                 <svg class="icon"><use href="#i-home"></use></svg> Bosh sahifa
             </a>
 
             <div class="nav-label">Bo‘limlar</div>
-            <a href="{{ route('panel.attendance') }}" data-permission="attendance.view" hidden
+            <a href="{{ route('panel.attendance', [], false) }}" data-permission="attendance.view" hidden
                class="nav-item @if(request()->routeIs('panel.attendance')) active @endif">
                 <svg class="icon"><use href="#i-clock"></use></svg> Davomat
             </a>
-            <a href="{{ route('panel.debts') }}" data-permission="debts.view" hidden
+            <a href="{{ route('panel.debts', [], false) }}" data-permission="debts.view" hidden
                class="nav-item @if(request()->routeIs('panel.debts')) active @endif">
                 <svg class="icon"><use href="#i-wallet"></use></svg> Qarzdorlik
             </a>
 
             <div class="nav-label" data-permission="users.manage" hidden>Boshqaruv</div>
-            <a href="{{ route('panel.users') }}" data-permission="users.manage" hidden
+            <a href="{{ route('panel.users', [], false) }}" data-permission="users.manage" hidden
                class="nav-item @if(request()->routeIs('panel.users')) active @endif">
                 <svg class="icon"><use href="#i-users"></use></svg> Foydalanuvchilar
             </a>
@@ -62,7 +63,7 @@
                     <span class="name" data-user-name></span>
                 </button>
                 <div class="dropdown" id="user-dropdown">
-                    <a href="{{ route('panel.profile') }}"><svg class="icon"><use href="#i-user"></use></svg> Profil</a>
+                    <a href="{{ route('panel.profile', [], false) }}"><svg class="icon"><use href="#i-user"></use></svg> Profil</a>
                     <button class="danger" data-logout><svg class="icon"><use href="#i-logout"></use></svg> Chiqish</button>
                 </div>
             </div>

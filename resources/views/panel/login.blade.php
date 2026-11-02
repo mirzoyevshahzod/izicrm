@@ -1,4 +1,5 @@
-@php($asset = fn ($path) => asset($path) . '?v=' . @filemtime(public_path($path)))
+{{-- Nisbiy manzillar: sayt webhook.izicrm.uz orqali ochilganda Laravel Host'ni izicrm.uz deb ko'radi --}}
+@php($asset = fn ($path) => '/' . $path . '?v=' . @filemtime(public_path($path)))
 <!DOCTYPE html>
 <html lang="uz">
 <head>

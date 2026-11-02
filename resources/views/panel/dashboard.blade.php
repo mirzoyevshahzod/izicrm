@@ -16,22 +16,22 @@
         <div class="card-header"><h2>Bo‘limlar</h2></div>
         <div class="card-body">
             <div class="grid quick-links">
-                <a class="card quick-link" href="{{ route('panel.attendance') }}" data-permission="attendance.view" hidden>
+                <a class="card quick-link" href="{{ route('panel.attendance', [], false) }}" data-permission="attendance.view" hidden>
                     <span class="stat-icon amber"><svg class="icon"><use href="#i-clock"></use></svg></span>
                     <div><div class="title">Davomat</div><div class="desc">Kechikishlar, sabablar, Excel</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
-                <a class="card quick-link" href="{{ route('panel.debts') }}" data-permission="debts.view" hidden>
+                <a class="card quick-link" href="{{ route('panel.debts', [], false) }}" data-permission="debts.view" hidden>
                     <span class="stat-icon red"><svg class="icon"><use href="#i-wallet"></use></svg></span>
                     <div><div class="title">Qarzdorlik</div><div class="desc">Qarzlar va xodim izohlari</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
-                <a class="card quick-link" href="{{ route('panel.users') }}" data-permission="users.manage" hidden>
+                <a class="card quick-link" href="{{ route('panel.users', [], false) }}" data-permission="users.manage" hidden>
                     <span class="stat-icon"><svg class="icon"><use href="#i-users"></use></svg></span>
                     <div><div class="title">Foydalanuvchilar</div><div class="desc">Panelga kirish va ruxsatlar</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
-                <a class="card quick-link" href="{{ route('panel.profile') }}">
+                <a class="card quick-link" href="{{ route('panel.profile', [], false) }}">
                     <span class="stat-icon green"><svg class="icon"><use href="#i-user"></use></svg></span>
                     <div><div class="title">Profil</div><div class="desc">Ma’lumotlar va parol</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
