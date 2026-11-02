@@ -13,7 +13,6 @@ Route::get('/oferta', function () {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/login', [HomeController::class, 'login'])->name('login');
-Route::get('/register', [HomeController::class, 'register'])->name('register');
 
 Route::get('/drivers', [HomeController::class, 'drivers'])->name('drivers');
 

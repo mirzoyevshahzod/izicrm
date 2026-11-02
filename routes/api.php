@@ -22,7 +22,6 @@ use App\Http\Controllers\TelegramEmployeeController;
 use App\Http\Controllers\MaterialRequestController;
 use App\Http\Controllers\RequestBotContoller;
 use App\Http\Controllers\TariffTelegramController;
-use App\Http\Controllers\TestController;
 use App\Http\Controllers\TelegramMobileAppBotController;
 
 Route::get('/user', function (Request $request) {
@@ -51,31 +50,33 @@ Route::post('/telegram/mobile-app-webhook', [TelegramMobileAppBotController::cla
 
 
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
 Route::post('/attendanceLogin', [AttendanceController::class, 'attendanceLogin']);
 Route::post('/debtLogin', [DebtViewController::class, 'debtLogin']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // Operatorlarni boshqarish — faqat admin
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/register', [AuthController::class, 'register']);
+        Route::get('/all-operator', [DriversController::class, 'getOperationUsers']);
+        Route::delete('/delete-user/{id}', [DriversController::class, 'deleteOperator']);
+        Route::get('/operator/{id}', [DriversController::class, 'getOperatorById']);
+        Route::put('/operator/{id}', [DriversController::class, 'updateOperator']);
+    });
+
     Route::get('/all-drivers', [DriversController::class, 'index']);
-    Route::get('/all-operator', [DriversController::class, 'getOperationUsers']);
-    Route::delete('/delete-user/{id}', [DriversController::class, 'deleteOperator']);
     Route::get('/profile', [DriversController::class, 'profile']);
-    Route::get('/operator/{id}', [DriversController::class, 'getOperatorById']);
-    Route::put('/operator/{id}', [DriversController::class, 'updateOperator']);
     Route::get('/drivers/search', [DriversController::class, 'searchByPhone']);
     Route::get('/attendance', [AttendanceController::class, 'attendance']);
     Route::get('/attendances/search', [AttendanceController::class, 'searchAttendance']);
     Route::get('/attendances/export', [AttendanceController::class, 'exportAttendance']);
-});
-
     Route::get('/admin/debts', [DebtViewController::class, 'index']);
     Route::get('/debts/search', [DebtViewController::class, 'search']);
+});
 
 
 
-Route::get('/test', [TestController::class, 'index']);
 
 ////
 Route::get('/queries', [QueryController::class, 'index']);

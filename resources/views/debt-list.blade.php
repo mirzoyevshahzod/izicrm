@@ -368,9 +368,15 @@ async function loadDebtData() {
     try {
         const response = await fetch(`/api/debts/search?${params.toString()}`, {
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
             }
         });
+
+        if (response.status === 401) {
+            window.location.href = '/debt-login';
+            return;
+        }
 
         if (!response.ok) throw new Error('Server xatoligi');
 
