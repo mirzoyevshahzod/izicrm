@@ -7,10 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kirish · IziCRM</title>
     <link rel="icon" href="/favicon.ico">
+    <script>try{var t=localStorage.getItem('panel_theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
     <link rel="stylesheet" href="{{ $asset('assets/panel/panel.css') }}">
 </head>
 <body>
 @include('panel.icons')
+
+<div class="auth-theme"><button class="btn ghost icon-only theme-toggle" data-theme-toggle aria-label="Kun / tun rejimi" title="Kun / tun rejimi">
+        <svg class="icon i-moon"><use href="#i-moon"></use></svg>
+        <svg class="icon i-sun"><use href="#i-sun"></use></svg>
+    </button></div>
 
 <div class="auth">
     <aside class="auth-aside">

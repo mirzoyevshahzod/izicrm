@@ -244,6 +244,21 @@
 
     const can = (user, permission) => !permission || user.is_admin || (user.permissions || []).includes(permission);
 
+    // ---------- Kun / tun rejimi ----------
+    const THEME_KEY = 'panel_theme';
+
+    function currentTheme() {
+        return document.documentElement.dataset.theme
+            || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('[data-theme-toggle]')) return;
+        const next = currentTheme() === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem(THEME_KEY, next); } catch (err) { /* private mode */ }
+    });
+
     // ---------- Panel sahifalarini ishga tushirish ----------
     function boot() {
         const body = document.body;
