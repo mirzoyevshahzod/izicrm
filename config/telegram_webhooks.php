@@ -38,7 +38,7 @@ return [
         ],
         'Kanal_13_Admin_Bot' => [
             'token' => env('TELEGRAM_TARIFF_BOT_TOKEN'),
-            'url'   => 'https://izicrm.uz/api/tariff-webhook',
+            'url'   => 'https://webhook.izicrm.uz/api/tariff-webhook',
         ],
         'contact_asst_bot' => [
             'token' => env('TELEGRAM_CONTACT_AS_BOT_TOKEN'),
