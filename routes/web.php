@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\HhAuthController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/oferta', function () {
@@ -34,5 +34,8 @@ Route::permanentRedirect('/update-user/{id}', '/panel/users');
 Route::permanentRedirect('/admin-profile', '/panel/profile');
 Route::permanentRedirect('/drivers', '/panel');
 
-// hh.uz OAuth callback (dev.hh.uz dagi Redirect URI bilan bir xil bo'lishi kerak)
-Route::get('/hh/callback', [HhAuthController::class, 'callback']);
+// hh.uz OAuth callback: HH bo'limi candidate.websol.uz ga ko'chdi.
+// dev.hh.uz dagi Redirect URI shu manzilda qolgan — code va state ni o'zgarishsiz o'sha yerga uzatamiz.
+Route::get('/hh/callback', fn (Request $request) => redirect()->away(
+    'https://candidate.websol.uz/hh/callback' . ($request->getQueryString() ? '?' . $request->getQueryString() : '')
+));
