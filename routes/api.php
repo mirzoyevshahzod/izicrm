@@ -50,8 +50,8 @@ Route::post('/telegram/postix-webhook', [TelegramPostixBotController::class, 'po
 Route::post('/candidate/telegram/webhook', [TelegramCandidateBotController::class, 'candidate']);
 Route::post('/express/telegram/webhook', [TelegramCandidateBotController::class, 'express']);
 Route::post('/telegram/mobile-app-webhook', [TelegramMobileAppBotController::class, 'mobileApp']);
-// HH bot (secret_token bilan himoyalangan)
-Route::post('/telegram/hh-webhook', [HhBotController::class, 'webhook']);
+// HH bot candidate.websol.uz ga ko'chdi — update o'sha yerga uzatiladi (secret sarlavhasi bilan)
+Route::post('/telegram/hh-webhook', [TelegramCandidateBotController::class, 'hh']);
 
 
 Route::post('/login', [AuthController::class, 'login'])->middleware(['throttle:10,1', 'panel.locale']);

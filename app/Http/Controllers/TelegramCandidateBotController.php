@@ -25,11 +25,28 @@ class TelegramCandidateBotController extends Controller
         );
     }
 
+    /**
+     * HH bot candidate.websol.uz ga ko'chdi. Telegram faqat webhook.izicrm.uz ga yeta oladi,
+     * shuning uchun update shu yerdan uzatiladi. Manzil: CANDIDATE_HH_WEBHOOK_URL yoki
+     * CANDIDATE_WEBHOOK_URL dagi host + /api/telegram/hh-webhook.
+     * Secret sarlavhasi ham uzatiladi — candidate uni o'zining TELEGRAM_HH_BOT_SECRET bilan tekshiradi.
+     */
+    public function hh(Request $request)
+    {
+        $url = env('CANDIDATE_HH_WEBHOOK_URL')
+            ?: preg_replace('#/api/.*$#', '/api/telegram/hh-webhook', (string) env('CANDIDATE_WEBHOOK_URL'));
 
-    private function forward(Request $request, string $url)
+        return $this->forward($request, $url, [
+            'X-Telegram-Bot-Api-Secret-Token' => (string) $request->header('X-Telegram-Bot-Api-Secret-Token'),
+        ]);
+    }
+
+
+    private function forward(Request $request, string $url, array $headers = [])
     {
         try {
             $response = Http::timeout(10)
+                ->withHeaders($headers)
                 ->acceptJson()
                 ->asJson()
                 ->post($url, $request->all());
