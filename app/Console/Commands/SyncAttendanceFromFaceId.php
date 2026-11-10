@@ -3,6 +3,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Attendance\WorkSchedule;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -178,6 +179,9 @@ class SyncAttendanceFromFaceId extends Command
 
     private function handleLate(object $employee, object $row, Carbon $arrival, int $lateMinutes): void
     {
+        // 2 daqiqagacha kechikish — xodim ogohlantiriladi, lekin sabab so'ralmaydi
+        $reasonRequired = WorkSchedule::requiresLateReason($lateMinutes);
+
         DB::table('attendance_late_events')->insert([
             'log_id'       => $row->id,
             'chat_id'      => $employee->chat_id,
@@ -190,7 +194,8 @@ class SyncAttendanceFromFaceId extends Command
             'month'        => $arrival->month,
             'year'         => $arrival->year,
             'late_minutes' => $lateMinutes,
-            'status'       => 'waiting_company',
+            // sabab so'ralmaydigan kechikish darhol yopiladi — eski "Sababini yozish" tugmasi unga tushib qolmasin
+            'status'       => $reasonRequired ? 'waiting_company' : 'completed',
             'created_at'   => now(),
             'updated_at'   => now(),
         ]);
@@ -220,6 +225,8 @@ class SyncAttendanceFromFaceId extends Command
                 "\n\n⚠️ Xodim botda ro'yxatdan o'tmagan, shuning uchun unga xabar yuborib bo'lmadi.
                 \nXodim Royxatdan o'tishi uchun ID: {$row->person_id}";
 
+        } elseif (!$reasonRequired) {
+            $hrText .= "\n\n_" . WorkSchedule::LATE_GRACE_MINUTES . " daqiqagacha kechikish — sabab so'ralmadi._";
         } else {
             $hrText .= "\n\n_Sabab hali yozilmagan — xodim javob yozganda tushuntirish xati generatsiya qilinadi._";
         }
@@ -228,7 +235,14 @@ class SyncAttendanceFromFaceId extends Command
             $this->sendMessage((int) $hrId, $hrText);
         }
 
-        if ($employee->chat_id) {
+        if ($employee->chat_id && !$reasonRequired) {
+            $this->sendMessage(
+                $employee->chat_id,
+                "⏰ Assalomu alaykum, {$employee->first_name}.\n\n"
+                ."Bugun ishga *{$lateMinutes} daqiqa* kech keldingiz ({$row->door_name}).\n"
+                ."Iltimos, keyingi safar vaqtida keling."
+            );
+        } elseif ($employee->chat_id) {
             $this->sendMessageWithButton(
                 $employee->chat_id,
                 "⏰ Assalomu alaykum, {$employee->first_name}.\n\n"

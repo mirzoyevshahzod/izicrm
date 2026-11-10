@@ -68,6 +68,8 @@ Route::middleware(['auth:sanctum', 'panel.locale'])->group(function () {
 
     Route::middleware('permission:attendance.view')->group(function () {
         Route::get('/attendances/search', [AttendanceController::class, 'searchAttendance']);
+        Route::get('/attendances/daily', [AttendanceController::class, 'daily']);
+        Route::get('/attendances/daily/export', [AttendanceController::class, 'exportDaily']);
         Route::get('/attendances/export', [AttendanceController::class, 'exportAttendance']);
     });
 

@@ -92,7 +92,13 @@ class DetectAbsentEmployees extends Command
             );
 
             if (!$alreadyNotified) {
-                $this->notifyAbsence($employee);
+                // Xodim botda "Bugun kela olmayman" deb sabab yozgan bo'lsa — xabarga qo'shamiz
+                $excuse = DB::table('attendance_absence_requests')
+                    ->where('person_id', $employee->person_id)
+                    ->whereDate('date', $date->toDateString())
+                    ->value('reason');
+
+                $this->notifyAbsence($employee, $excuse);
             }
 
             $count++;
@@ -103,12 +109,17 @@ class DetectAbsentEmployees extends Command
         return self::SUCCESS;
     }
 
-    private function notifyAbsence(object $employee): void
+    private function notifyAbsence(object $employee, ?string $excuse = null): void
     {
         $baseText = "⚫️ *Xodim kelmagan!*\n\n"
             ."👤 {$employee->first_name} {$employee->last_name}\n"
             ."🏢 Bo'lim: {$employee->department}\n"
             ."📅 Bugun face ID orqali kirish qayd etilmagan.";
+
+        if ($excuse) {
+            // Markdown belgilarini olib tashlaymiz — xodim matni xabarni buzmasin
+            $baseText .= "\n💬 Oldindan sabab yozgan: " . str_replace(['_', '*', '`', '['], '', $excuse);
+        }
 
         $bossIds = config('services.telegram.egs_boss_ids', []);
 

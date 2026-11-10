@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Exports\AttendanceExport;
+use App\Exports\DailyAttendanceExport;
+use App\Services\Attendance\DailyAttendanceReport;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AttendanceController extends Controller
@@ -51,6 +54,40 @@ class AttendanceController extends Controller
             'filters' => $request->only(['fio', 'day', 'month', 'year']),
             'data' => $attendances
         ]);
+    }
+
+    /**
+     * Kunlik davomat holati (kelgan / kech qolgan / hali kelmagan / kelmagan / sababli / erta ketgan)
+     */
+    public function daily(Request $request, DailyAttendanceReport $report)
+    {
+        return response()->json($report->build($this->dailyDate($request)));
+    }
+
+    /**
+     * Kunlik holatni Excel'ga — paneldagi filtrlar (kartochka, bo'lim, qidiruv) bilan
+     */
+    public function exportDaily(Request $request, DailyAttendanceReport $report)
+    {
+        $request->validate([
+            'filter' => ['nullable', 'in:all,present,late,missing,excused,early'],
+            'department' => ['nullable', 'string', 'max:255'],
+            'q' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $data = $report->build($this->dailyDate($request));
+        $rows = DailyAttendanceReport::filter($data['employees'], $request->filter, $request->department, $request->q);
+
+        return Excel::download(new DailyAttendanceExport($data, $rows), 'davomat_' . $data['date'] . '.xlsx');
+    }
+
+    private function dailyDate(Request $request): Carbon
+    {
+        $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+        ]);
+
+        return $request->filled('date') ? Carbon::createFromFormat('Y-m-d', $request->date) : today();
     }
 
     public function exportAttendance(Request $request)

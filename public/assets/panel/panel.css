@@ -667,3 +667,20 @@ body {
 .auth-card h1 { font-size: 26px; }
 .auth-card .btn.block { height: 46px; font-size: 15px; }
 @media (max-width: 860px) { .auth-card { padding: 24px; box-shadow: var(--shadow); } }
+
+/* ---------- Davomat: kunlik holat ---------- */
+.att-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 16px; margin-bottom: 16px; }
+.date-nav { display: flex; align-items: center; gap: 6px; }
+.date-nav .input { width: auto; }
+.att-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; flex: 1; color: var(--text); font-size: 13px; font-weight: 500; }
+.att-meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.att-meta .icon { width: 16px; height: 16px; color: var(--muted); }
+.notice.info { background: var(--primary-soft); color: var(--primary); }
+.stat-btn { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
+.stat-btn:hover { transform: translateY(-1px); border-color: var(--primary); }
+.stat-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.stat-btn.active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft), var(--shadow); }
+.badge-x { display: inline-grid; place-items: center; padding: 0; margin-left: 2px; border: 0; background: none; color: inherit; cursor: pointer; }
+.badge-x .icon { width: 12px; height: 12px; }
+.table td .truncate .icon { width: 14px; height: 14px; vertical-align: -2px; color: var(--muted); }
+@media (max-width: 600px) { .att-bar { padding: 12px; } .date-nav { width: 100%; } .date-nav .input { flex: 1; min-width: 0; } }

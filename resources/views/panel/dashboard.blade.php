@@ -17,7 +17,7 @@
             <div class="grid quick-links">
                 <a class="card quick-link" href="{{ route('panel.attendance', [], false) }}" data-permission="attendance.view" hidden>
                     <span class="stat-icon amber"><svg class="icon"><use href="#i-clock"></use></svg></span>
-                    <div><div class="title">{{ __('Davomat') }}</div><div class="desc">{{ __('Kechikishlar, sabablar, Excel') }}</div></div>
+                    <div><div class="title">{{ __('Davomat') }}</div><div class="desc">{{ __('Kunlik holat, kechikishlar, sabablar') }}</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
                 <a class="card quick-link" href="{{ route('panel.debts', [], false) }}" data-permission="debts.view" hidden>

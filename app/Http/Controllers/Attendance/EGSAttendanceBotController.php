@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Attendance;
 
 use App\Http\Controllers\Controller;
+use App\Services\Attendance\WorkSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,9 @@ use PhpOffice\PhpWord\TemplateProcessor;
 
 class EGSAttendanceBotController extends Controller
 {
+    /** Xodimning asosiy klaviaturasidagi tugma */
+    private const BTN_ABSENT = '🚫 Bugun kela olmayman';
+
     protected $botToken;
     protected $apiUrl;
 
@@ -53,6 +57,22 @@ class EGSAttendanceBotController extends Controller
         $existingEmployee = DB::table('attendance_employees')
             ->where('chat_id', $chatId)
             ->first();
+
+        // 🚫 "Bugun kela olmayman" — tugma yoki /kelolmayman buyrug'i
+        if ($existingEmployee && ($text === self::BTN_ABSENT || $text === '/kelolmayman')) {
+            $this->startAbsenceRequest($chatId, $existingEmployee);
+            return response()->json(['ok' => true]);
+        }
+
+        // 🚫 Kela olmaslik sababi kutilmoqda (tugma bosilgandan keyin)
+        if ($existingEmployee && $text && cache()->get("egs_absence_state_{$chatId}") === 'waiting_reason') {
+            if (str_starts_with($text, '/')) {
+                cache()->forget("egs_absence_state_{$chatId}"); // boshqa buyruq — oqimni bekor qilamiz
+            } else {
+                $this->handleAbsenceReasonInput($chatId, $existingEmployee, $text);
+                return response()->json(['ok' => true]);
+            }
+        }
 
         // 🔵 SABAB KUTILMOQDA — bu eng yuqori ustuvorlik, chunki xodim javob yozayotgan bo'lishi mumkin
         $lateEvent = DB::table('attendance_late_events')
@@ -148,9 +168,11 @@ class EGSAttendanceBotController extends Controller
             }
 
             if ($existingEmployee) {
-                $this->sendMessage(
+                $this->sendPlain(
                     $chatId,
-                    "👋 Assalomu alaykum, {$existingEmployee->first_name}!\n\nSiz allaqachon ro'yxatdan o'tgansiz. ✅"
+                    "👋 Assalomu alaykum, {$existingEmployee->first_name}!\n\nSiz allaqachon ro'yxatdan o'tgansiz. ✅\n\n"
+                    . "Bugun ishga kela olmasangiz, pastdagi «" . self::BTN_ABSENT . "» tugmasini bosib sababini yozing.",
+                    $this->employeeKeyboard()
                 );
                 return response()->json(['ok' => true]);
             }
@@ -322,14 +344,156 @@ class EGSAttendanceBotController extends Controller
         cache()->forget("egs_register_state_{$chatId}");
         cache()->forget("egs_register_phone_{$chatId}");
 
-        // ✅ Klaviaturani (telefon yuborish tugmasini) olib tashlaymiz
-        Http::post($this->apiUrl . '/sendMessage', [
-            'chat_id' => $chatId,
-            'text' => "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n👤 {$matched->first_name} {$matched->last_name}\n\nEndi kech qolganingizda bot sizga avtomatik xabar yuboradi.",
-            'reply_markup' => [
-                'remove_keyboard' => true,
-            ],
+        // ✅ Telefon yuborish tugmasi o'rniga asosiy klaviatura ("Bugun kela olmayman")
+        $this->sendPlain(
+            $chatId,
+            "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n👤 {$matched->first_name} {$matched->last_name}\n\n"
+            . "Endi kech qolganingizda bot sizga avtomatik xabar yuboradi.\n"
+            . "Ishga kela olmaydigan kuningiz «" . self::BTN_ABSENT . "» tugmasini bosib sababini yozing.",
+            $this->employeeKeyboard()
+        );
+    }
+
+    /**
+     * =========================
+     * "BUGUN KELA OLMAYMAN"
+     * =========================
+     */
+
+    private function employeeKeyboard(): array
+    {
+        return [
+            'keyboard' => [[['text' => self::BTN_ABSENT]]],
+            'resize_keyboard' => true,
+            'is_persistent' => true,
+        ];
+    }
+
+    private function startAbsenceRequest(int $chatId, object $employee): void
+    {
+        $today = today();
+
+        if (!WorkSchedule::isWorkday($today)) {
+            $this->sendPlain($chatId, "😊 Bugun dam olish kuni — sabab yozish shart emas.", $this->employeeKeyboard());
+            return;
+        }
+
+        $arrived = DB::table('attendance_daily_marks')
+            ->where('person_id', $employee->person_id)
+            ->where('mark_date', $today->toDateString())
+            ->exists();
+
+        if (!$arrived) {
+            // attendance:sync hali ulgurmagan bo'lishi mumkin — HikCentral'ning o'zidan tekshiramiz
+            try {
+                $arrived = DB::connection('hr_db')->table('access_logs')
+                    ->where('person_id', $employee->person_id)
+                    ->whereDate('authentication_datetime', $today->toDateString())
+                    ->where('authentication_result', 'Success')
+                    ->where('in_out', 'Enter')
+                    ->exists();
+            } catch (\Throwable $e) {
+                Log::warning('EGS absence: hr_db tekshiruvi ishlamadi', ['error' => $e->getMessage()]);
+            }
+        }
+
+        if ($arrived) {
+            $this->sendPlain(
+                $chatId,
+                "ℹ️ Bugun ishga kelganingiz Face ID orqali qayd etilgan, shuning uchun «kela olmayman» deb belgilab bo'lmaydi.",
+                $this->employeeKeyboard()
+            );
+            return;
+        }
+
+        $existing = DB::table('attendance_absence_requests')
+            ->where('person_id', $employee->person_id)
+            ->whereDate('date', $today->toDateString())
+            ->first();
+
+        $text = "✍️ Bugun ishga nima sababdan kela olmasligingizni yozing:";
+
+        if ($existing) {
+            $text = "ℹ️ Bugun uchun sabab allaqachon yozilgan:\n«{$existing->reason}»\n\n"
+                . "✍️ Yangi sabab yozsangiz, avvalgisi almashtiriladi:";
+        }
+
+        cache()->put("egs_absence_state_{$chatId}", 'waiting_reason', 1800);
+
+        $this->sendPlain($chatId, $text, [
+            'inline_keyboard' => [[['text' => '❌ Bekor qilish', 'callback_data' => 'absence_cancel']]],
         ]);
+    }
+
+    private function handleAbsenceReasonInput(int $chatId, object $employee, string $reason): void
+    {
+        $reason = trim($reason);
+
+        if (mb_strlen($reason) < 3) {
+            $this->sendPlain($chatId, "❗️ Iltimos, sababni to'liqroq yozing:");
+            return;
+        }
+
+        $reason = mb_substr($reason, 0, 1000);
+        $today = today()->toDateString();
+        $fio = trim("{$employee->first_name} {$employee->last_name}");
+
+        $existingId = DB::table('attendance_absence_requests')
+            ->where('person_id', $employee->person_id)
+            ->whereDate('date', $today)
+            ->value('id');
+
+        $values = [
+            'employee_id' => $employee->id,
+            'chat_id' => $chatId,
+            'fio' => $fio,
+            'department' => $employee->department,
+            'reason' => $reason,
+            'updated_at' => now(),
+        ];
+
+        if ($existingId) {
+            DB::table('attendance_absence_requests')->where('id', $existingId)->update($values);
+        } else {
+            DB::table('attendance_absence_requests')->insert($values + [
+                'person_id' => $employee->person_id,
+                'date' => $today,
+                'created_at' => now(),
+            ]);
+        }
+
+        cache()->forget("egs_absence_state_{$chatId}");
+
+        $this->sendPlain(
+            $chatId,
+            "✅ Sababingiz qabul qilindi va HR'ga yuborildi. Rahmat!",
+            $this->employeeKeyboard()
+        );
+
+        $hrText = "🚫 Xodim bugun ishga kela olmaydi\n\n"
+            . "👤 {$fio}\n"
+            . "🏢 Bo'lim: " . ($employee->department ?: '—') . "\n"
+            . "📅 Sana: " . today()->format('d.m.Y') . "\n"
+            . "💬 Sabab: {$reason}"
+            . ($existingId ? "\n\n(sabab yangilandi)" : '');
+
+        foreach (config('services.telegram.egs_hr_ids', []) as $hrId) {
+            $this->sendPlain((int) $hrId, $hrText);
+        }
+    }
+
+    /**
+     * parse_mode'siz xabar — xodim yozgan matndagi _ * [ kabi belgilar xabarni buzmasligi uchun
+     */
+    private function sendPlain(int $chatId, string $text, ?array $replyMarkup = null): void
+    {
+        $payload = ['chat_id' => $chatId, 'text' => $text];
+
+        if ($replyMarkup) {
+            $payload['reply_markup'] = $replyMarkup;
+        }
+
+        Http::post($this->apiUrl . '/sendMessage', $payload);
     }
 
     /**
@@ -441,6 +605,16 @@ class EGSAttendanceBotController extends Controller
             }
 
             $this->completeRegistration($chatId, $employee);
+            return;
+        }
+
+        if ($data === 'absence_cancel') {
+            cache()->forget("egs_absence_state_{$chatId}");
+            Http::post($this->apiUrl . '/editMessageText', [
+                'chat_id'    => $chatId,
+                'message_id' => $messageId,
+                'text'       => "❌ Bekor qilindi.",
+            ]);
             return;
         }
 
