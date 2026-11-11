@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\External\QueryController;
 use App\Http\Controllers\Attendance\EGSAttendanceBotController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceEmployeeController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HhBotController;
@@ -93,6 +94,10 @@ Route::middleware(['auth:sanctum', 'panel.locale'])->group(function () {
         Route::patch('/bot/chats/{chat}', [HhBotController::class, 'updateChat']);
         Route::delete('/bot/chats/{chat}', [HhBotController::class, 'destroyChat']);
         Route::post('/bot/test', [HhBotController::class, 'test']);
+    });
+
+    Route::middleware('permission:employees.manage')->group(function () {
+        Route::apiResource('attendance-employees', AttendanceEmployeeController::class)->except('show');
     });
 
     Route::middleware('permission:users.manage')->group(function () {

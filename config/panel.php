@@ -18,6 +18,7 @@ return [
         'attendance.view' => 'Davomat',
         'debts.view' => 'Qarzdorlik',
         'hh.view' => 'HH nomzodlar',
+        'employees.manage' => 'Xodimlar (Face ID)',
         'users.manage' => 'Foydalanuvchilar',
     ],
 

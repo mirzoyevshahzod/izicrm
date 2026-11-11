@@ -41,6 +41,11 @@
                 <svg class="icon"><use href="#i-briefcase"></use></svg> {{ __('HH nomzodlar') }}
             </a>
 
+            <a href="{{ route('panel.employees', [], false) }}" data-permission="employees.manage" hidden
+               class="nav-item @if(request()->routeIs('panel.employees')) active @endif">
+                <svg class="icon"><use href="#i-user"></use></svg> {{ __('Xodimlar (Face ID)') }}
+            </a>
+
             <div class="nav-label" data-permission="users.manage" hidden>{{ __('Boshqaruv') }}</div>
             <a href="{{ route('panel.users', [], false) }}" data-permission="users.manage" hidden
                class="nav-item @if(request()->routeIs('panel.users')) active @endif">
