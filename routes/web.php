@@ -15,10 +15,6 @@ Route::prefix('panel')->middleware('panel.locale')->group(function () {
     Route::view('/', 'panel.dashboard')->name('panel');
     Route::view('/attendance', 'panel.attendance')->name('panel.attendance');
     Route::view('/debts', 'panel.debts')->name('panel.debts');
-    Route::view('/hh', 'panel.hh.index')->name('panel.hh');
-    Route::view('/hh/searches/create', 'panel.hh.form')->name('panel.hh.create');
-    Route::view('/hh/searches/{search}/edit', 'panel.hh.form')->whereNumber('search')->name('panel.hh.edit');
-    Route::view('/hh/searches/{search}', 'panel.hh.candidates')->whereNumber('search')->name('panel.hh.candidates');
     Route::view('/employees', 'panel.employees')->name('panel.employees');
     Route::view('/users', 'panel.users')->name('panel.users');
     Route::view('/profile', 'panel.profile')->name('panel.profile');

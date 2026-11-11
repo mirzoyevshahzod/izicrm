@@ -36,11 +36,6 @@
                 <svg class="icon"><use href="#i-wallet"></use></svg> {{ __('Qarzdorlik') }}
             </a>
 
-            <a href="{{ route('panel.hh', [], false) }}" data-permission="hh.view" hidden
-               class="nav-item @if(request()->routeIs('panel.hh*')) active @endif">
-                <svg class="icon"><use href="#i-briefcase"></use></svg> {{ __('HH nomzodlar') }}
-            </a>
-
             <a href="{{ route('panel.employees', [], false) }}" data-permission="employees.manage" hidden
                class="nav-item @if(request()->routeIs('panel.employees')) active @endif">
                 <svg class="icon"><use href="#i-user"></use></svg> {{ __('Xodimlar (Face ID)') }}

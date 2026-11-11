@@ -25,11 +25,6 @@
                     <div><div class="title">{{ __('Qarzdorlik') }}</div><div class="desc">{{ __('Qarzlar va xodim izohlari') }}</div></div>
                     <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
                 </a>
-                <a class="card quick-link" href="{{ route('panel.hh', [], false) }}" data-permission="hh.view" hidden>
-                    <span class="stat-icon"><svg class="icon"><use href="#i-briefcase"></use></svg></span>
-                    <div><div class="title">{{ __('HH nomzodlar') }}</div><div class="desc">{{ __('hh.uz dan mos rezyumelar') }}</div></div>
-                    <svg class="icon arrow"><use href="#i-arrow-right"></use></svg>
-                </a>
                 <a class="card quick-link" href="{{ route('panel.users', [], false) }}" data-permission="users.manage" hidden>
                     <span class="stat-icon"><svg class="icon"><use href="#i-users"></use></svg></span>
                     <div><div class="title">{{ __('Foydalanuvchilar') }}</div><div class="desc">{{ __('Panelga kirish va ruxsatlar') }}</div></div>
@@ -73,9 +68,6 @@ Panel.ready.then(async (user) => {
         }
         if (s.debts) {
             html += card('wallet', 'red', t('Qarzdorlik summasi'), fmt.money(s.debts.total), t(':n ta yozuv', { n: fmt.number(s.debts.count) }));
-        }
-        if (s.hh) {
-            html += card('briefcase', '', t('Yangi nomzodlar (hh.uz)'), fmt.number(s.hh.new), t(':n ta tanlangan', { n: fmt.number(s.hh.selected) }));
         }
         if (s.users) {
             html += card('users', 'green', t('Panel foydalanuvchilari'), fmt.number(s.users.count));

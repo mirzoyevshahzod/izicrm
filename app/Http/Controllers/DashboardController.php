@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\Debt;
-use App\Models\HhSearchResume;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -35,14 +34,6 @@ class DashboardController extends Controller
             $stats['debts'] = [
                 'count' => Debt::count(),
                 'total' => (float) Debt::sum('total_amount'),
-            ];
-        }
-
-        if ($user->can('hh.view')) {
-            $stats['hh'] = [
-                'new' => HhSearchResume::where('status', 'new')
-                    ->whereHas('search', fn ($q) => $q->where('is_active', true))->count(),
-                'selected' => HhSearchResume::where('status', 'selected')->count(),
             ];
         }
 

@@ -6,8 +6,6 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceEmployeeController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\HhBotController;
-use App\Http\Controllers\HhController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtViewController;
@@ -62,9 +60,6 @@ Route::middleware(['auth:sanctum', 'panel.locale'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me/password', [AuthController::class, 'changePassword']);
-    Route::get('/me/telegram', [HhBotController::class, 'myTelegram']);
-    Route::post('/me/telegram/link', [HhBotController::class, 'linkTelegram']);
-    Route::delete('/me/telegram', [HhBotController::class, 'unlinkTelegram']);
     Route::get('/dashboard', DashboardController::class);
 
     Route::middleware('permission:attendance.view')->group(function () {
@@ -76,24 +71,6 @@ Route::middleware(['auth:sanctum', 'panel.locale'])->group(function () {
 
     Route::middleware('permission:debts.view')->group(function () {
         Route::get('/debts/search', [DebtViewController::class, 'search']);
-    });
-
-    Route::middleware('permission:hh.view')->prefix('hh')->group(function () {
-        Route::get('/dictionaries', [HhController::class, 'dictionaries']);
-        Route::get('/skills', [HhController::class, 'skills']);
-        Route::post('/preview', [HhController::class, 'preview']);
-        Route::get('/searches', [HhController::class, 'index']);
-        Route::post('/searches', [HhController::class, 'store']);
-        Route::get('/searches/{search}', [HhController::class, 'show']);
-        Route::put('/searches/{search}', [HhController::class, 'update']);
-        Route::delete('/searches/{search}', [HhController::class, 'destroy']);
-        Route::post('/searches/{search}/run', [HhController::class, 'run']);
-        Route::get('/searches/{search}/candidates', [HhController::class, 'candidates']);
-        Route::patch('/candidates/{candidate}', [HhController::class, 'updateCandidate']);
-        Route::get('/bot/chats', [HhBotController::class, 'chats']);
-        Route::patch('/bot/chats/{chat}', [HhBotController::class, 'updateChat']);
-        Route::delete('/bot/chats/{chat}', [HhBotController::class, 'destroyChat']);
-        Route::post('/bot/test', [HhBotController::class, 'test']);
     });
 
     Route::middleware('permission:employees.manage')->group(function () {

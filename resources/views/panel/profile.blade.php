@@ -30,14 +30,6 @@
                 <p class="muted" style="margin:0; font-size:12px">{{ __('Parol yangilangach, boshqa qurilmalardagi sessiyalar yopiladi.') }}</p>
             </form>
         </div>
-
-        <div class="card" id="tg-card" hidden>
-            <div class="card-header"><h2>{{ __('Telegram xabarnomalar') }}</h2></div>
-            <div class="card-body" style="display:grid; gap:14px">
-                <p class="muted" style="margin:0">{{ __('hh.uz dagi yangi mos nomzodlar HH botidan shaxsiy Telegram’ingizga keladi.') }}</p>
-                <div id="tg-state"></div>
-            </div>
-        </div>
     </div>
 @endsection
 
@@ -45,7 +37,7 @@
 <script>
 Panel.ready.then((user) => {
     const { api, esc, fmt, icon, setLoading, showFieldErrors, toast, t } = Panel;
-    const labels = { 'attendance.view': t('Davomat'), 'debts.view': t('Qarzdorlik'), 'hh.view': t('HH nomzodlar'), 'users.manage': t('Foydalanuvchilar') };
+    const labels = { 'attendance.view': t('Davomat'), 'debts.view': t('Qarzdorlik'), 'employees.manage': t('Xodimlar (Face ID)'), 'users.manage': t('Foydalanuvchilar') };
 
     document.getElementById('p-email').textContent = user.email;
     document.getElementById('p-phone').textContent = user.phone_number || '—';
@@ -53,39 +45,6 @@ Panel.ready.then((user) => {
     document.getElementById('p-access').innerHTML = user.is_admin
         ? `<span class="badge primary">${icon('shield')} ${t('Administrator')}</span>`
         : (user.permissions.map((p) => `<span class="badge">${esc(labels[p] || p)}</span>`).join('') || '<span class="muted">—</span>');
-
-    // ---------- Telegram (HH bot) ----------
-    const tgState = document.getElementById('tg-state');
-    async function loadTelegram() {
-        let s;
-        try { s = await api('/me/telegram'); } catch (e) { return; }
-        document.getElementById('tg-card').hidden = !s.available;
-        if (!s.available) return;
-        tgState.innerHTML = s.linked
-            ? `<div class="row" style="justify-content:space-between">
-                   <span class="badge green">${icon('check')} ${t('Ulangan')}${s.username ? ' · @' + esc(s.username) : (s.title ? ' · ' + esc(s.title) : '')}</span>
-                   <button class="btn ghost sm" id="tg-unlink">${t('Uzish')}</button>
-               </div>`
-            : `<button class="btn" id="tg-link">${icon('external')} ${t('Telegram’ni ulash')}</button>
-               <p class="muted" style="margin:8px 0 0; font-size:12px">${t('Telegram ochiladi — u yerda «Start» ni bosing. Keyin shu sahifani yangilang.')}</p>`;
-    }
-    tgState.addEventListener('click', async (e) => {
-        if (e.target.closest('#tg-link')) {
-            try {
-                const { url } = await api('/me/telegram/link', { method: 'POST' });
-                window.open(url, '_blank', 'noopener');
-            } catch (err) { toast(err.message, 'error'); }
-        }
-        if (e.target.closest('#tg-unlink')) {
-            try {
-                await api('/me/telegram', { method: 'DELETE' });
-                toast(t('Telegram uzildi.'), 'success');
-                loadTelegram();
-            } catch (err) { toast(err.message, 'error'); }
-        }
-    });
-    window.addEventListener('focus', loadTelegram);
-    loadTelegram();
 
     const form = document.getElementById('password-form');
     const alertBox = document.getElementById('pw-alert');

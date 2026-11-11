@@ -56,20 +56,6 @@ return [
         'express_bot_token' => env('TELEGRAM_EXPRESS_BOT_TOKEN'),
         'izicrm_monitor_bot_token' => env('TELEGRAM_IZICRM_MONITOR_BOT_TOKEN'),
         'monitor_chat_ids' => array_filter(explode(',', env('TELEGRAM_MONITOR_CHAT_IDS', ''))),
-        // HH bot: yangi nomzodlar (hh.uz) HR larga
-        'hh_bot_token' => env('TELEGRAM_HH_BOT_TOKEN'),
-        'hh_bot_secret' => env('TELEGRAM_HH_BOT_SECRET'),
-    ],
-
-    // hh.uz API (https://dev.hh.uz) — rezyume bazasidan qidirish
-    'hh' => [
-        'client_id' => env('HH_CLIENT_ID'),
-        'client_secret' => env('HH_CLIENT_SECRET'),
-        'redirect_uri' => env('HH_REDIRECT_URI', 'https://izicrm.uz/hh/callback'),
-        'user_agent' => env('HH_USER_AGENT', 'IziCRM HR/1.0'),
-        'api_url' => env('HH_API_URL', 'https://api.hh.ru'),
-        'oauth_url' => env('HH_OAUTH_URL', 'https://hh.ru/oauth/authorize'),
-        'host' => env('HH_HOST', 'hh.uz'),
     ],
 
 ];
