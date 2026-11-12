@@ -23,6 +23,8 @@ return [
         'egs_davomat_bot' => [
             'token' => env('TELEGRAM_DAVOMAT_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram/davomat-webhook',
+            'secret' => env('TELEGRAM_DAVOMAT_BOT_SECRET'),
+            'allowed_updates' => ['message'],
         ],
         'egs_zadolzhennost_bot' => [
             'token' => env('TELEGRAM_BOT_TOKEN3'),
