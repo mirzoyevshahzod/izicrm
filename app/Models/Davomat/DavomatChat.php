@@ -13,16 +13,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $phone
  * @property int|null $crm_user_id
  * @property string|null $pending_reason
+ * @property \Illuminate\Support\Carbon|null $pending_date the day the reason being typed is for
  */
 class DavomatChat extends Model
 {
-    protected $fillable = ['telegram_id', 'phone', 'crm_user_id', 'pending_reason'];
+    protected $fillable = ['telegram_id', 'phone', 'crm_user_id', 'pending_reason', 'pending_date'];
 
     protected function casts(): array
     {
         return [
             'telegram_id' => 'integer',
             'crm_user_id' => 'integer',
+            'pending_date' => 'date',
         ];
     }
 
