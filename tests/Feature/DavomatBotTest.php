@@ -97,8 +97,8 @@ class DavomatBotTest extends TestCase
         $this->assertSame(['Rahmat, ALI VALIYEV! Endi kechikadigan yoki kelmaydigan bo‘lsangiz, shu yerdan xabar bering.'], $this->replies());
         $this->assertSame(77, DavomatChat::query()->sole()->crm_user_id);
         Http::assertSent(fn (HttpRequest $request) => $request['reply_markup']['keyboard'] === [
-            [['text' => 'Kechikasizmi? (00:00 dan 8:30 gacha ishlaydi)']],
-            [['text' => 'Kelmaysizmi?']],
+            [['text' => 'Кечикаяпман (Жорий кун учун эрталабки соат 08-30гача киритиш)']],
+            [['text' => 'Боролмайман (Эртанги кун учун жорий кундаги 00-00 гача белгилаш)']],
         ]);
     }
 
@@ -120,6 +120,20 @@ class DavomatBotTest extends TestCase
         $this->assertSame('late', $reason->type);
         $this->assertSame('Пробка на кольце', $reason->reason);
         $this->assertSame('2026-11-12', $reason->date->toDateString());
+    }
+
+    public function test_the_old_keyboard_buttons_still_work(): void
+    {
+        $this->linked();
+        Carbon::setTestNow('2026-11-12 08:00:00');
+
+        $this->botReceives(['text' => 'Kechikasizmi? (00:00 dan 8:30 gacha ishlaydi)']);
+        $this->botReceives(['text' => 'Kelmaysizmi?']);
+
+        $this->assertSame([
+            'Kechikish sababini kiriting (bugun, 12.11.2026 uchun):',
+            'Sababini kiriting (13.11.2026 uchun sabab kirityapsiz):',
+        ], $this->replies());
     }
 
     public function test_the_late_button_does_not_work_after_0830(): void

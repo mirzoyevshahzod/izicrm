@@ -11,17 +11,17 @@ use Illuminate\Support\Str;
 
 /**
  * egs_davomat_bot: xodim bir marta raqamini yuboradi (CRM dagi korporativ raqam bilan
- * solishtiriladi), keyin "Kechikasizmi?" / "Kelmaysizmi?" ni bosib sababini yozadi.
+ * solishtiriladi), keyin "Кечикаяпман" / "Боролмайман" ni bosib sababini yozadi.
  * Sabab davomat_reasons ga tushadi, CRM uni olib ketib o'sha kunning "Причина" siga yozadi.
  *
- *  - "Kechikasizmi?" — faqat 00:00–08:30, bugun uchun (CRM da darhol ko'rinadi);
- *  - "Kelmaysizmi?" — ertangi kun uchun, shu kun 23:59 gacha (CRM da ertasi 08:00 dan).
+ *  - "Кечикаяпман" — faqat 00:00–08:30, bugun uchun (CRM da darhol ko'rinadi);
+ *  - "Боролмайман" — ertangi kun uchun, shu kun 23:59 gacha (CRM da ertasi 08:00 dan).
  */
 class DavomatBot
 {
     public const BUTTONS = [
-        'late' => 'Kechikasizmi? (00:00 dan 8:30 gacha ishlaydi)',
-        'absent' => 'Kelmaysizmi?',
+        'late' => 'Кечикаяпман (Жорий кун учун эрталабки соат 08-30гача киритиш)',
+        'absent' => 'Боролмайман (Эртанги кун учун жорий кундаги 00-00 гача белгилаш)',
     ];
 
     /**
@@ -29,10 +29,12 @@ class DavomatBot
      */
     private const OLD_BUTTONS = [
         'Kechikasizmi?' => 'late',
+        'Kechikasizmi? (00:00 dan 8:30 gacha ishlaydi)' => 'late',
+        'Kelmaysizmi?' => 'absent',
     ];
 
     /**
-     * "Kechikasizmi?" shu vaqtgacha (H:i, shu daqiqa ham) ishlaydi.
+     * "Кечикаяпман" shu vaqtgacha (H:i, shu daqiqa ham) ishlaydi.
      */
     public const LATE_UNTIL = '08:30';
 
