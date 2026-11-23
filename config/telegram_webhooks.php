@@ -44,10 +44,6 @@ return [
             'token' => env('TELEGRAM_CONTACT_AS_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram/webhook',
         ],
-        'egs_attendance_bot' => [
-            'token' => env('TELEGRAM_EGS_ATTENDANCE_BOT_TOKEN'),
-            'url'   => 'https://webhook.izicrm.uz/api/telegram/egs-attendance-webhook',
-        ],
         'MyFinEGSbot' => [
             'token' => env('TELEGRAM_MYFIN_EGS_BOT_TOKEN'),
             'url'   => 'https://webhook.izicrm.uz/api/telegram/myfin-egs-webhook',

@@ -7,25 +7,15 @@ use App\Services\Attendance\WorkSchedule;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
 class SyncAttendanceFromFaceId extends Command
 {
     protected $signature = 'attendance:sync
-                        {--dry-run : Faqat ko\'rsatadi, xabar yubormaydi va bazaga yozmaydi}
+                        {--dry-run : Faqat ko\'rsatadi, bazaga yozmaydi}
                         {--test= : Faqat shu log id ni sinov uchun qayta ishlaydi (cursor o\'zgarmaydi)}';
 
-    protected $description = 'HikCentral (face_id) bazasidan yangi kirish yozuvlarini o\'qib, kech qolganlarga xabar yuboradi';
-
-    protected string $apiUrl;
-
-    public function __construct()
-    {
-        parent::__construct();
-        $token = config('services.telegram.egs_attendance_bot_token');
-        $this->apiUrl = "https://api.telegram.org/bot{$token}";
-    }
+    protected $description = 'HikCentral (face_id) bazasidan yangi kirish yozuvlarini o\'qib, kech qolishlarni qayd etadi';
 
     public function handle(): int
     {
@@ -170,16 +160,12 @@ class SyncAttendanceFromFaceId extends Command
 
         if ($lateSeconds > 0) {
             $this->handleLate($employee, $row, $arrival, $lateMinutes);
-        } else {
-            if ($employee->chat_id) {
-                $this->sendMessage($employee->chat_id, "✅ {$employee->first_name}, siz vaqtida keldingiz. Kunni yaxshi o'tkazing!");
-            }
         }
     }
 
     private function handleLate(object $employee, object $row, Carbon $arrival, int $lateMinutes): void
     {
-        // 2 daqiqagacha kechikish — xodim ogohlantiriladi, lekin sabab so'ralmaydi
+        // grace oralig'idagi kechikish uchun sabab so'ralmaydi
         $reasonRequired = WorkSchedule::requiresLateReason($lateMinutes);
 
         DB::table('attendance_late_events')->insert([
@@ -194,98 +180,9 @@ class SyncAttendanceFromFaceId extends Command
             'month'        => $arrival->month,
             'year'         => $arrival->year,
             'late_minutes' => $lateMinutes,
-            // sabab so'ralmaydigan kechikish darhol yopiladi — eski "Sababini yozish" tugmasi unga tushib qolmasin
             'status'       => $reasonRequired ? 'waiting_company' : 'completed',
             'created_at'   => now(),
             'updated_at'   => now(),
-        ]);
-
-        $lateDuration = $this->formatLateDuration($lateMinutes);
-
-        // 🚨 Boshliqlarga DARHOL xabar — sababni kutmasdan
-        $bossIds = config('services.telegram.egs_boss_ids', []);
-        $hrIds   = config('services.telegram.egs_hr_ids', []);
-        $notifyIds = array_unique((array)array_merge($bossIds, $hrIds));
-
-        $baseText = "🔴 *Kech qolish!*\n\n"
-            ."👤 {$employee->first_name} {$employee->last_name}\n"
-            ."🏢 Bo'lim: {$row->department}\n"
-            ."🚪 Eshik: {$row->door_name}\n"
-            ."⏰ Vaqt: {$arrival->format('H:i:s')}\n"
-            ."⏱ Kech qoldi: {$lateDuration}";
-
-        foreach ($bossIds as $bossId) {
-            $this->sendMessage((int) $bossId, $baseText);
-        }
-
-        $hrText = $baseText;
-
-        if (!$employee->chat_id) {
-            $hrText .=
-                "\n\n⚠️ Xodim botda ro'yxatdan o'tmagan, shuning uchun unga xabar yuborib bo'lmadi.
-                \nXodim Royxatdan o'tishi uchun ID: {$row->person_id}";
-
-        } elseif (!$reasonRequired) {
-            $hrText .= "\n\n_" . WorkSchedule::LATE_GRACE_MINUTES . " daqiqagacha kechikish — sabab so'ralmadi._";
-        } else {
-            $hrText .= "\n\n_Sabab hali yozilmagan — xodim javob yozganda tushuntirish xati generatsiya qilinadi._";
-        }
-
-        foreach ($hrIds as $hrId) {
-            $this->sendMessage((int) $hrId, $hrText);
-        }
-
-        if ($employee->chat_id && !$reasonRequired) {
-            $this->sendMessage(
-                $employee->chat_id,
-                "⏰ Assalomu alaykum, {$employee->first_name}.\n\n"
-                ."Bugun ishga *{$lateMinutes} daqiqa* kech keldingiz ({$row->door_name}).\n"
-                ."Iltimos, keyingi safar vaqtida keling."
-            );
-        } elseif ($employee->chat_id) {
-            $this->sendMessageWithButton(
-                $employee->chat_id,
-                "⏰ Assalomu alaykum, {$employee->first_name}.\n\n"
-                ."Bugun ishga *{$lateMinutes} daqiqa* kech keldingiz ({$row->door_name}).\n"
-                ."Iltimos, sababini yozing.",
-                'write_late_reason'
-            );
-        }
-    }
-
-    private function formatLateDuration(int $totalMinutes): string
-    {
-        $hours   = intdiv($totalMinutes, 60);
-        $minutes = $totalMinutes % 60;
-
-        if ($hours > 0) {
-            return $minutes > 0
-                ? "{$hours} soat {$minutes} daqiqa"
-                : "{$hours} soat";
-        }
-
-        return "{$minutes} daqiqa";
-    }
-    private function sendMessage(int $chatId, string $text): void
-    {
-        Http::post($this->apiUrl . '/sendMessage', [
-            'chat_id'    => $chatId,
-            'text'       => $text,
-            'parse_mode' => 'Markdown',
-        ]);
-    }
-
-    private function sendMessageWithButton(int $chatId, string $text, string $callbackData): void
-    {
-        Http::post($this->apiUrl . '/sendMessage', [
-            'chat_id'    => $chatId,
-            'text'       => $text,
-            'parse_mode' => 'Markdown',
-            'reply_markup' => [
-                'inline_keyboard' => [[
-                    ['text' => 'Sababini yozish', 'callback_data' => $callbackData],
-                ]],
-            ],
         ]);
     }
 }

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\External\QueryController;
-use App\Http\Controllers\Attendance\EGSAttendanceBotController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceEmployeeController;
 use App\Http\Controllers\AuthController;
@@ -42,7 +41,6 @@ Route::post('/telegram/material-request-webhook', [MaterialRequestController::cl
 Route::post('/incotruck-request-send', [RequestBotContoller::class, 'send']);
 Route::post('/kgs-request-send', [RequestBotContoller::class, 'KGSsend']);
 Route::post('/tariff-webhook', [TariffTelegramController::class, 'webhook']);
-Route::post('/telegram/egs-attendance-webhook', [EGSAttendanceBotController::class, 'webhook']);
 Route::post('/telegram/myfin-egs-webhook', [TelegramMyfinEgsBotController::class, 'webhook']);
 Route::post('/telegram/myfin-express-webhook', [TelegramMyfinExpressBotController::class, 'webhook']);
 Route::post('/telegram/postix-webhook', [TelegramPostixBotController::class, 'postixWebhook']);

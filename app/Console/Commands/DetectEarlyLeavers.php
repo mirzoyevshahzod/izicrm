@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
 class DetectEarlyLeavers extends Command
@@ -13,16 +12,7 @@ class DetectEarlyLeavers extends Command
     protected $signature = 'attendance:detect-early-leave
                         {--date= : Sinov uchun aniq sana (Y-m-d), berilmasa bugungi kun olinadi}';
 
-    protected $description = 'Kunning oxirgi chiqishini tekshirib, ish vaqtidan oldin ketganlarga xabar yuboradi';
-
-    protected string $apiUrl;
-
-    public function __construct()
-    {
-        parent::__construct();
-        $token = config('services.telegram.egs_attendance_bot_token');
-        $this->apiUrl = "https://api.telegram.org/bot{$token}";
-    }
+    protected $description = 'Kunning oxirgi chiqishini tekshirib, ish vaqtidan oldin ketganlarni qayd etadi';
 
     public function handle(): int
     {
@@ -91,13 +81,6 @@ class DetectEarlyLeavers extends Command
 
             $earlyMinutes = max(1, $expectedEnd->diffInMinutes($lastEvent));
 
-            $alreadyNotified = DB::table('attendance_early_leaves')
-                ->where('person_id', $personId)
-                ->where('day', $date->day)
-                ->where('month', $date->month)
-                ->where('year', $date->year)
-                ->exists();
-
             DB::table('attendance_early_leaves')->updateOrInsert(
                 [
                     'person_id' => $personId,
@@ -119,73 +102,11 @@ class DetectEarlyLeavers extends Command
                 ]
             );
 
-            if (!$alreadyNotified) {
-                $this->handleEarlyLeave($employee, $row, $lastEvent, $expectedEnd, $earlyMinutes);
-            }
-
             $count++;
         }
 
         $this->info("{$count} ta erta ketish aniqlandi.");
 
         return self::SUCCESS;
-    }
-    private function handleEarlyLeave(
-        object $employee,
-        object $row,
-        Carbon $lastExit,
-        Carbon $expectedEnd,
-        int $earlyMinutes
-    ): void {
-        $earlyDuration = $this->formatDuration($earlyMinutes);
-
-        $baseText = "🟠 *Ish vaqtidan oldin ketish!*\n\n"
-            ."👤 {$employee->first_name} {$employee->last_name}\n"
-            ."🏢 Bo'lim: {$row->department}\n"
-            ."🚪 Eshik: {$row->door_name}\n"
-            ."⏰ Chiqqan vaqti: {$lastExit->format('H:i:s')}\n"
-            ."📅 Ish tugash vaqti: {$expectedEnd->format('H:i')}\n"
-            ."⏱ {$earlyDuration} oldin ketgan";
-
-//        $bossIds = config('services.telegram.egs_boss_ids', []);
-//
-//        foreach ($bossIds as $bossId) {
-//            $this->sendMessage((int) $bossId, $baseText);
-//        }
-
-        $hrIds = config('services.telegram.egs_hr_ids', []);
-        $hrText = $baseText;
-
-        if (!$employee->chat_id) {
-            $hrText .= "\n\n⚠️ Xodim botda ro'yxatdan o'tmagan."
-                ."\nXodim ro'yxatdan o'tishi uchun ID: {$row->person_id}";
-        }
-
-        foreach ($hrIds as $hrId) {
-            $this->sendMessage((int) $hrId, $hrText);
-        }
-    }
-
-    private function formatDuration(int $totalMinutes): string
-    {
-        $hours   = intdiv($totalMinutes, 60);
-        $minutes = $totalMinutes % 60;
-
-        if ($hours > 0) {
-            return $minutes > 0
-                ? "{$hours} soat {$minutes} daqiqa"
-                : "{$hours} soat";
-        }
-
-        return "{$minutes} daqiqa";
-    }
-
-    private function sendMessage(int $chatId, string $text): void
-    {
-        Http::post($this->apiUrl . '/sendMessage', [
-            'chat_id'    => $chatId,
-            'text'       => $text,
-            'parse_mode' => 'Markdown',
-        ]);
     }
 }
