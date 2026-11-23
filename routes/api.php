@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\External\QueryController;
+use App\Http\Controllers\Davomat\CrmSyncController as DavomatCrmSyncController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceEmployeeController;
 use App\Http\Controllers\AuthController;
@@ -34,6 +35,11 @@ Route::post('/telegram/express-webhook', [TelegramExpressBotController::class, '
 Route::post('/telegram/webhook', [TelegramContactBotController::class, 'webhook']);
 Route::post('/telegram-webhook', [SubscriberController::class, 'webhook']);
 Route::post('/telegram/davomat-webhook', [TelegramDavomatController::class, 'webhook']);
+// egs_davomat_bot <-> CRM: CRM o'zi chaqiradi (attendance-bot:sync) — Bearer DAVOMAT_CRM_API_KEY
+Route::prefix('/davomat')->middleware(\App\Http\Middleware\VerifyDavomatCrmKey::class)->group(function () {
+    Route::put('/employees', [DavomatCrmSyncController::class, 'employees']);
+    Route::get('/reasons', [DavomatCrmSyncController::class, 'reasons']);
+});
 Route::post('/telegram/debt-webhook', [DebtController::class, 'webhook']);
 Route::post('/telegram/contact-webhook', [TelegramEmployeeController::class, 'webhook']);
 Route::post('/telegram/incotruck-request-webhook', [RequestBotContoller::class, 'webhook']);

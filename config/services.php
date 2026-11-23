@@ -34,8 +34,14 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    // egs_davomat_bot sabablarini CRM (crm.zanjeer.uz) olib ketadi — CRM .env dagi DAVOMAT_BOT_API_KEY bilan bir xil
+    'davomat' => [
+        'crm_api_key' => env('DAVOMAT_CRM_API_KEY'),
+    ],
     'telegram' => [
         'davomat_bot_token' => env('TELEGRAM_DAVOMAT_BOT_TOKEN'),
+        // setWebhook dagi secret_token — Telegram uni X-Telegram-Bot-Api-Secret-Token da qaytaradi
+        'davomat_bot_secret' => env('TELEGRAM_DAVOMAT_BOT_SECRET'),
         'bot_token3' => env('TELEGRAM_BOT_TOKEN3'),
         'contact_bot_token' => env('TELEGRAM_CONTACT_BOT_TOKEN'),
         'incotruck_request_bot' => env('TELEGRAN_INCOTRUCK_BOT_TOKEN'),
