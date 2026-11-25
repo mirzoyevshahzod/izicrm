@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Query;
+use App\Services\TelegramQuerySearch;
 use danog\MadelineProto\API;
 use danog\MadelineProto\Settings;
 use Illuminate\Support\Facades\Http;
@@ -37,12 +38,7 @@ class CheckStatusAtmenAllQueries extends Command
                     $search = $query->custom_id;
 
                     try {
-                        $results = $MadelineProto->messages->searchGlobal([
-                            'q' => $search,
-                            'limit' => 100
-                        ]);
-
-                        $count = $count = $results['count'] ?? count($results['messages'] ?? []);
+                        $count = TelegramQuerySearch::countExact($MadelineProto, $search);
                         $query->update(['count' => $count]);
 
 

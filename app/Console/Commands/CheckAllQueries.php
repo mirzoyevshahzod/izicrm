@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Query;
 use App\Services\MonitorNotifier;
+use App\Services\TelegramQuerySearch;
 use Illuminate\Support\Facades\Cache;
 use danog\MadelineProto\API;
 use danog\MadelineProto\Settings;
@@ -12,7 +13,9 @@ use Illuminate\Support\Facades\Http;
 
 class CheckAllQueries extends Command
 {
-    protected $signature = 'telegram:check-all';
+    protected $signature = 'telegram:check-all
+                        {--id= : Faqat shu custom_id ni tekshiradi (masalan EGS21720)}
+                        {--dry-run : Natijani faqat ko\'rsatadi, bazaga yozmaydi va Zanjeer API ga yubormaydi}';
     protected $description = 'Check all queries via Telegram search';
 
     public function handle()
@@ -37,19 +40,25 @@ class CheckAllQueries extends Command
 
             $MadelineProto->start();
 
+            $onlyId = $this->option('id');
+            $dryRun = (bool) $this->option('dry-run');
+
             Query::query()
-                ->where('is_finished', 0)
-                ->chunk(50, function ($queries) use ($MadelineProto, &$checked, &$errors) {
+                ->when($onlyId, fn ($q) => $q->where('custom_id', $onlyId), fn ($q) => $q->where('is_finished', 0))
+                ->chunkById(50, function ($queries) use ($MadelineProto, $dryRun, &$checked, &$errors) {
                     foreach ($queries as $query) {
                         $search = $query->custom_id;
 
                         try {
-                            $results = $MadelineProto->messages->searchGlobal([
-                                'q' => $search,
-                                'limit' => 100
-                            ]);
+                            $count = TelegramQuerySearch::countExact($MadelineProto, $search);
 
-                            $count = $count = $results['count'] ?? count($results['messages'] ?? []);
+                            if ($dryRun) {
+                                $checked++;
+                                $this->info("🔎 {$search} => {$count} (dry-run, saqlanmadi)");
+                                usleep(500000);
+                                continue;
+                            }
+
                             $query->update(['count' => $count]);
 
                             $response = Http::withoutVerifying()
